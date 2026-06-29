@@ -38,19 +38,33 @@
 - Scan global XAUUSD/US100.
 - Conclusion : toutes les hypothèses M15 testées sont rejetées.
 
+### V1.6
+
+- Sanity check data/config.
+- Resampling M30/H1.
+- Scanner full sample non tradable sur M15/M30/H1.
+- Identification d'un seul candidat : `US100_H1 / nas_trend_pullback`.
+
 ## En Cours
 
-### V1.6 - Sanity Check + Timeframe Scanner
+### V1.7 - US100 H1 Trend Pullback Review
 
-- Vérifier les coûts, point sizes, spreads, sessions et timezones.
-- Ajouter un sanity check data/config.
-- Ajouter le resampling M30/H1.
-- Scanner M15/M30/H1 en diagnostic full sample non tradable.
-- Identifier si le problème vient des hypothèses ou d'une configuration de backtest.
+- Backtest strict du candidat.
+- Monte Carlo.
+- Walk-forward.
+- Analyse de concentration mensuelle.
+- Sensibilité légère des paramètres.
+- Statut : À RETRAVAILLER, non validable, non tradable.
 
 ## Prochaines Étapes
 
-### V1.7 - EURUSD
+### V1.8 - Régimes US100 H1
+
+- Comprendre les régimes qui portent `nas_trend_pullback`.
+- Tester des filtres de jour, heure, ATR et spread sans optimisation massive.
+- Valider uniquement si le profit cesse d'être concentré sur quelques mois.
+
+### V1.9 - EURUSD
 
 - Importer et diagnostiquer EURUSD M15.
 - Tester `eur_london_breakout`.
