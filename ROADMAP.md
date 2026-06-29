@@ -68,13 +68,23 @@
 - Statut : À RETRAVAILLER.
 - Pas de validation avancée : walk-forward fragile et concentration meilleur mois encore légèrement trop élevée.
 
+### V2.0 - MT5 Parity US100 H1
+
+- Configuration candidate dédiée.
+- Export des signaux Python pour comparaison.
+- EA MQL5 vérificateur sans trading réel par défaut.
+- Comparateur Python/MT5.
+- Inspection des coûts et backtest coûts x1.5.
+- Tests anti-lookahead.
+
 ## En Cours
 
-### V1.10 - Décision Sur La Suite US100 H1
+### V2.0 - Décision Sur La Suite US100 H1
 
-- Construire un vrai suivi hors échantillon futur.
-- Comparer à EURUSD avant de consacrer plus d'effort à US100 H1.
-- Ne pas passer en EA.
+- Exporter `us100_h1_mt5_signals.csv` depuis MT5 avec `EnableTrading=false`.
+- Comparer Python et MT5 avant toute discussion de paper/demo.
+- Confirmer que les coûts broker réels restent compatibles avec le backtest coûts x1.5.
+- Garder le candidat À RETRAVAILLER si la parité, les coûts ou les tests anti-lookahead échouent.
 
 ## Prochaines Étapes
 

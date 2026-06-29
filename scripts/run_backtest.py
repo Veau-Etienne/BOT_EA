@@ -39,6 +39,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--strategies-config", default=str(ROOT / "config/strategies.yaml"))
     parser.add_argument("--reports-dir", default=str(ROOT / "data/reports"))
     parser.add_argument("--diagnostic-full-sample", action="store_true", help="Ignore drawdown limits for analysis only.")
+    parser.add_argument("--cost-multiplier", type=float, default=1.0, help="Multiply spread, slippage and commission for execution stress tests.")
     return parser.parse_args()
 
 
@@ -50,10 +51,22 @@ def main() -> None:
     strat_cfg = strategy_config(strategies_cfg, args.strategy)
     asset = resolve_asset_spec(assets_cfg, strat_cfg["symbol"])
     backtest_cfg = build_backtest_config(risk_cfg, strat_cfg)
+    if args.cost_multiplier <= 0:
+        raise ValueError("--cost-multiplier must be positive")
+    if args.cost_multiplier != 1.0:
+        backtest_cfg = replace(
+            backtest_cfg,
+            spread_points=backtest_cfg.spread_points * args.cost_multiplier,
+            slippage_points=backtest_cfg.slippage_points * args.cost_multiplier,
+            commission_per_lot_round_turn=backtest_cfg.commission_per_lot_round_turn * args.cost_multiplier,
+        )
     if args.diagnostic_full_sample:
         backtest_cfg = replace(backtest_cfg, diagnostic_full_sample=True)
 
     data, cleaning = load_mt5_ohlcv(args.data, timezone=args.timezone, timeframe=args.timeframe)
+    if args.cost_multiplier != 1.0 and "spread" in data.columns:
+        data = data.copy()
+        data["spread"] = data["spread"].astype(float) * args.cost_multiplier
     strategy = STRATEGY_REGISTRY[args.strategy](strat_cfg)
     result = BacktestEngine(backtest_cfg, asset).run(data, strategy)
     metrics = calculate_metrics(result.trades, result.equity_curve, backtest_cfg.initial_capital)
@@ -95,6 +108,7 @@ def main() -> None:
                 "validation": asdict(validation),
                 "stopped_reason": result.stopped_reason,
                 "diagnostic_full_sample": args.diagnostic_full_sample,
+                "cost_multiplier": args.cost_multiplier,
             },
             handle,
             indent=2,
@@ -110,6 +124,8 @@ def main() -> None:
         print(f"Spread: avg={cleaning.spread_mean:.2f}, min={cleaning.spread_min:.2f}, max={cleaning.spread_max:.2f}")
     if args.diagnostic_full_sample:
         print("MODE DIAGNOSTIC — non tradable, drawdown limits ignored for analysis.")
+    if args.cost_multiplier != 1.0:
+        print(f"Cost multiplier: x{args.cost_multiplier:.2f}")
     print(f"Trades: {metrics['trade_count']}")
     print(f"Final capital: {metrics['final_capital']:.2f}")
     print(f"Net profit: {metrics['net_profit']:.2f}")

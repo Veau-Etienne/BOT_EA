@@ -1,0 +1,77 @@
+candidate:
+  id: "us100_h1_trend_pullback_exclude_monday"
+  asset: "US100_H1"
+  broker_symbols:
+    primary: "US100.cash"
+    aliases:
+      - "US100"
+      - "US100.cash"
+      - "NAS100"
+      - "NAS100.cash"
+      - "USTEC"
+  canonical_asset: "NAS100"
+  timeframe: "H1"
+  strategy: "nas_trend_pullback_exclude_monday"
+  status: "research_candidate"
+  verdict: "à retravailler"
+  live_trading_forbidden: true
+
+strategy_rules:
+  entry_convention: "bar_close"
+  monday_filter: true
+  sessions:
+    - ["15:45", "18:00"]
+  no_new_trade_after: "18:00"
+  max_trades_per_day: 2
+  ema_fast: 20
+  ema_mid: 50
+  ema_slow: 200
+  ema_slope_lookback: 4
+  pullback_ema: 20
+  atr_period: 14
+  atr_min_filter: 20
+  swing_lookback: 5
+  stop_loss:
+    mode: "swing_low_high_with_atr_fallback"
+    fallback_atr_multiplier: 1.5
+  take_profit:
+    mode: "fixed_r_multiple"
+    r_multiple: 1.5
+
+risk_rules:
+  initial_capital: 100000
+  risk_per_trade_pct: 0.25
+  max_daily_loss_pct: 1.0
+  max_total_drawdown_pct: 5.0
+  max_consecutive_losses: 3
+  no_overnight: true
+  force_flat_time: "18:00"
+
+execution_costs:
+  point_size: 0.01
+  contract_size: 1
+  max_spread_points: 250
+  default_spread_points: 20
+  slippage_points: 5
+  commission_per_lot_round_turn: 7.0
+  stress_required:
+    - "cost_multiplier_1_5"
+    - "monte_carlo_after_cost_multiplier_1_5"
+    - "python_mt5_signal_parity"
+
+v1_9_reference:
+  trades: 200
+  net_profit: 3310.95
+  profit_factor: 1.343
+  winrate_pct: 52.0
+  expectancy: 16.55
+  max_drawdown_pct: 0.89
+  max_losing_streak: 8
+  best_month_profit: 1192.54
+  worst_month_profit: -473.51
+  best_month_concentration_pct: 36.02
+  top3_month_concentration_pct: 73.88
+  monte_carlo_p95_drawdown_pct: 2.06
+  walk_forward_verdict: "fragile"
+  stress_cost_1_5_profit_factor: 1.161
+  stress_cost_2_0_profit_factor: 0.665

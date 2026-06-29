@@ -60,6 +60,27 @@ Toutes les décisions ci-dessous suivent les métriques, pas l'intuition. Une st
 - Raison : les métriques strictes et rolling sont bonnes, mais la stratégie ne passe pas la validation avancée car le walk-forward n'est pas majoritairement OK et le meilleur mois reste au-dessus de la limite stricte de 35%.
 - Prochaine action : ne pas lancer d'EA ; conserver comme candidat de recherche prioritaire, puis tester un vrai out-of-sample futur ou une simulation paper/demo sans exécution réelle avant toute promotion.
 
+## V2.0 — MT5 parity and execution realism for US100_H1 exclude Monday
+
+- Date : 2026-06-29.
+- Branche : `research/v2.0-mt5-parity-us100-h1`.
+- Candidat : `US100_H1 / nas_trend_pullback_exclude_monday`.
+- Statut : candidat de recherche, live trading interdit.
+- Configuration candidate : `config/candidates/us100_h1_trend_pullback_exclude_monday.yaml`.
+- Fiche candidate : `docs/candidates/us100_h1_trend_pullback_exclude_monday.md`.
+- Export signaux Python attendu : `data/reports/US100_H1_nas_trend_pullback_exclude_monday_signals.csv`.
+- EA vérificateur MT5 : `mql5/Experts/US100_H1_TrendPullback_ExcludeMonday_Verifier.mq5`, `EnableTrading=false` par défaut.
+- Rapport de parité attendu après export MT5 : `data/reports/US100_H1_signal_parity_report.md`.
+- Inspection coûts attendue : `data/reports/US100_H1_cost_inspection.md`.
+- Signaux Python exportés : 311 signaux théoriques.
+- Parité MT5 : non exécutée, CSV MT5 absent ; le comparateur échoue clairement avec `CSV MT5 introuvable`.
+- Inspection coûts : spread moyen 131.98 points, coût estimé round-turn 1 lot 8.42, premier niveau testé PF < 1 à x1.75 avec spread, slippage et commission multipliés.
+- Backtest coûts x1.5 : 197 trades, profit net 1 616.18, PF 1.161, expectancy 8.20, max DD 1.19%, verdict À RETRAVAILLER.
+- Monte Carlo coûts x1.5 : DD médian 1.57%, DD 95% 2.48%, pire DD 3.48%, ruine 5/8/10/15% à 0%, risque recommandé 0.50%.
+- Tests anti-lookahead : ajoutés dans `tests/test_no_lookahead.py`; non exécutés via pytest car `pytest` n'est pas installé dans `.venv`.
+- Verdict actuel : PARITY À FAIRE, donc toujours À RETRAVAILLER.
+- Raison : le candidat ne peut pas être promu tant que la parité Python/MT5, la résistance coûts x1.5 et l'absence de lookahead ne sont pas vérifiées dans le workflow V2.0.
+
 ## Décision Courante
 
 Le candidat `US100_H1 / nas_trend_pullback_exclude_monday` reste à retravailler. Aucune stratégie n'est validée.
