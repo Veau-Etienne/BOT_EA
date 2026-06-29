@@ -29,6 +29,21 @@ Toutes les décisions ci-dessous suivent les métriques, pas l'intuition. Une st
 - Raison : edge potentiel faible mais réel en strict, cependant PF < 1.20, profit concentré, walk-forward mitigé et défaut de stabilité temporelle.
 - Prochaine action : ne pas lancer d'EA ; isoler les régimes qui portent le signal, surtout filtres temporels/jours/ATR, puis retester hors échantillon sans optimisation massive.
 
+## V1.8 — US100_H1 nas_trend_pullback regime filter lab
+
+- Date : 2026-06-29.
+- Candidat brut : 246 trades, PF 1.129, expectancy 6.64, max DD 1.18%, concentration meilleur mois 53.63%, top 3 mois 130.75%.
+- Filtres testés : 35 filtres simples ou combinaisons limitées, avec segments A/B/C et holdout 2025-03-01 -> 2026-02-25.
+- Filtres prometteurs : 0.
+- Filtres à retravailler : 6, incluant `exclude_thursday`, `baseline`, `keep_15_18`, `keep_16_19`, `keep_15_20`, `ema_slope_ok`.
+- Meilleur score robustesse : `exclude_monday_adx_gt_20`, 178 trades, PF 1.363, expectancy 16.79, max DD 0.83%, holdout OK, segments OK, mais rejeté car concentration meilleur mois 39.32% et top 3 mois 77.37%.
+- Filtre le plus proche des règles : `exclude_monday`, 200 trades, PF 1.343, expectancy 16.35, max DD 0.87%, holdout OK, segments OK, mais rejeté car concentration meilleur mois 35.93%, au-dessus de la limite 35%.
+- Holdout : plusieurs filtres gardent un holdout positif, mais cela ne suffit pas à compenser la concentration temporelle.
+- Segments : les meilleurs filtres ont des segments A/B/C positifs, mais la performance reste trop dépendante de quelques mois.
+- Verdict : À RETRAVAILLER, pas de validation avancée.
+- Décision : ne pas relancer Monte Carlo/walk-forward filtré, car aucun filtre ne passe les règles prometteuses.
+- Prochaine action : analyser un split out-of-sample plus strict ou reformuler le signal ; ne pas lancer d'EA et ne pas promouvoir le candidat en stratégie validable.
+
 ## Décision Courante
 
-Le candidat `US100_H1 / nas_trend_pullback` reste à retravailler. Aucune stratégie n'est validée.
+Le candidat `US100_H1 / nas_trend_pullback` reste à retravailler après Filter Lab. Aucune stratégie n'est validée.

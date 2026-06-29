@@ -45,8 +45,6 @@
 - Scanner full sample non tradable sur M15/M30/H1.
 - Identification d'un seul candidat : `US100_H1 / nas_trend_pullback`.
 
-## En Cours
-
 ### V1.7 - US100 H1 Trend Pullback Review
 
 - Backtest strict du candidat.
@@ -56,15 +54,24 @@
 - Sensibilité légère des paramètres.
 - Statut : À RETRAVAILLER, non validable, non tradable.
 
-## Prochaines Étapes
-
 ### V1.8 - Régimes US100 H1
 
-- Comprendre les régimes qui portent `nas_trend_pullback`.
-- Tester des filtres de jour, heure, ATR et spread sans optimisation massive.
-- Valider uniquement si le profit cesse d'être concentré sur quelques mois.
+- Filter Lab sur `US100_H1 / nas_trend_pullback`.
+- 35 filtres simples ou combinaisons limitées testés.
+- 0 filtre prometteur.
+- Le candidat reste À RETRAVAILLER, non validable, non tradable.
 
-### V1.9 - EURUSD
+## En Cours
+
+### V1.9 - Décision Sur La Suite US100 H1
+
+- Décider s'il faut reformuler le signal ou construire un holdout plus strict.
+- Ne pas passer en EA.
+- Ne pas sélectionner un filtre uniquement parce qu'il améliore le profit net historique.
+
+## Prochaines Étapes
+
+### V1.10 - EURUSD
 
 - Importer et diagnostiquer EURUSD M15.
 - Tester `eur_london_breakout`.
