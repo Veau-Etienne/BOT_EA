@@ -7,6 +7,7 @@ from src.strategies.nas_opening_breakout import NASOpeningBreakout
 from src.strategies.nas_opening_range_retest import NASOpeningRangeRetest
 from src.strategies.nas_post_open_mean_reversion import NASPostOpenMeanReversion
 from src.strategies.nas_trend_pullback import NASTrendPullback
+from src.strategies.nas_trend_pullback_exclude_monday import NASTrendPullbackExcludeMonday
 from src.strategies.xau_failed_breakout_reversal import XAUFailedBreakoutReversal
 from src.strategies.xau_pullback_trend import XAUPullbackTrend
 from src.strategies.xau_trend_breakout import XAUTrendBreakout
@@ -19,6 +20,7 @@ STRATEGY_REGISTRY: dict[str, type[BaseStrategy]] = {
     NASOpeningBreakout.name: NASOpeningBreakout,
     NASPostOpenMeanReversion.name: NASPostOpenMeanReversion,
     NASTrendPullback.name: NASTrendPullback,
+    NASTrendPullbackExcludeMonday.name: NASTrendPullbackExcludeMonday,
     NASOpeningRangeRetest.name: NASOpeningRangeRetest,
     EURLondonBreakout.name: EURLondonBreakout,
     EURLondonMeanReversion.name: EURLondonMeanReversion,

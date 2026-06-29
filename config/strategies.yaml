@@ -114,6 +114,28 @@ strategies:
     max_spread: 250
     max_trades_per_day: 2
 
+  nas_trend_pullback_exclude_monday:
+    class: "NASTrendPullbackExcludeMonday"
+    symbol: "NAS100"
+    timeframe: "H1"
+    risk_per_trade_pct: 0.25
+    ema_fast: 20
+    ema_mid: 50
+    ema_slow: 200
+    slope_lookback: 4
+    pullback_ema: 20
+    atr_period: 14
+    atr_min_filter: 20
+    sl_atr_multiplier: 1.5
+    tp_r_multiple: 1.5
+    swing_lookback: 5
+    avoid_until: "15:45"
+    trade_until: "18:00"
+    sessions:
+      - ["15:45", "18:00"]
+    max_spread: 250
+    max_trades_per_day: 2
+
   nas_opening_range_retest:
     class: "NASOpeningRangeRetest"
     symbol: "NAS100"

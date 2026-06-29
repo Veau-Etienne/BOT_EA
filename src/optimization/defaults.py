@@ -34,6 +34,11 @@ DEFAULT_GRID = {
         "tp_r_multiple": [1.0, 1.5, 2.0],
         "sl_atr_multiplier": [1.2, 1.5],
     },
+    "nas_trend_pullback_exclude_monday": {
+        "pullback_ema": [20, 50],
+        "tp_r_multiple": [1.0, 1.5, 2.0],
+        "sl_atr_multiplier": [1.2, 1.5],
+    },
     "nas_opening_range_retest": {
         "opening_range_minutes": [30, 45],
         "retest_tolerance_atr": [0.15, 0.25, 0.35],

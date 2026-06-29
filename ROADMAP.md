@@ -61,17 +61,24 @@
 - 0 filtre prometteur.
 - Le candidat reste À RETRAVAILLER, non validable, non tradable.
 
+### V1.9 - US100 H1 Exclude Monday Validation
+
+- Stratégie explicite `nas_trend_pullback_exclude_monday`.
+- Backtest strict, Monte Carlo, walk-forward, analyse candidat, stress tests et rolling validation.
+- Statut : À RETRAVAILLER.
+- Pas de validation avancée : walk-forward fragile et concentration meilleur mois encore légèrement trop élevée.
+
 ## En Cours
 
-### V1.9 - Décision Sur La Suite US100 H1
+### V1.10 - Décision Sur La Suite US100 H1
 
-- Décider s'il faut reformuler le signal ou construire un holdout plus strict.
+- Construire un vrai suivi hors échantillon futur.
+- Comparer à EURUSD avant de consacrer plus d'effort à US100 H1.
 - Ne pas passer en EA.
-- Ne pas sélectionner un filtre uniquement parce qu'il améliore le profit net historique.
 
 ## Prochaines Étapes
 
-### V1.10 - EURUSD
+### V1.11 - EURUSD
 
 - Importer et diagnostiquer EURUSD M15.
 - Tester `eur_london_breakout`.
