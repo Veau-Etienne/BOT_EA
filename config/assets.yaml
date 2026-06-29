@@ -1,0 +1,19 @@
+assets:
+  XAUUSD:
+    aliases: ["XAUUSD", "GOLD", "XAUUSD.cash"]
+    point: 0.01
+    contract_size: 100
+    default_spread_points: 25
+    timezone: "Europe/Paris"
+  NAS100:
+    aliases: ["NAS100", "US100", "US100.cash", "NAS100.cash", "USTEC"]
+    point: 0.01
+    contract_size: 1
+    default_spread_points: 150
+    timezone: "Europe/Paris"
+  EURUSD:
+    aliases: ["EURUSD", "EURUSD.cash"]
+    point: 0.00001
+    contract_size: 100000
+    default_spread_points: 10
+    timezone: "Europe/Paris"
