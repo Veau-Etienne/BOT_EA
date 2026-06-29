@@ -77,14 +77,25 @@
 - Inspection des coûts et backtest coûts x1.5.
 - Tests anti-lookahead.
 
+### V2.1 - Run MT5 Parity Workflow
+
+- Pytest installé et tests anti-lookahead OK.
+- MT5/Wine localisé.
+- EA vérificateur copié dans `MQL5/Experts`.
+- Compilation automatique non validée car aucun `.ex5` n'a été généré.
+- CSV MT5 absent, parité bloquée avec verdict `PARITY_BLOCKED_MT5_CSV_MISSING`.
+
 ## En Cours
 
-### V2.0 - Décision Sur La Suite US100 H1
+### V2.1 - Génération Manuelle CSV MT5
 
-- Exporter `us100_h1_mt5_signals.csv` depuis MT5 avec `EnableTrading=false`.
-- Comparer Python et MT5 avant toute discussion de paper/demo.
-- Confirmer que les coûts broker réels restent compatibles avec le backtest coûts x1.5.
-- Garder le candidat À RETRAVAILLER si la parité, les coûts ou les tests anti-lookahead échouent.
+- Compiler manuellement `US100_H1_TrendPullback_ExcludeMonday_Verifier.mq5` dans MetaEditor.
+- Ouvrir `US100.cash` en H1 dans MT5.
+- Attacher l'EA avec `EnableTrading=false`.
+- Générer `MQL5/Files/us100_h1_mt5_signals.csv`.
+- Relancer `scripts/run_mt5_parity_check.py`.
+- Si `PARITY_OK` : prochaine étape = forward test observation only, sans trading live.
+- Si `PARITY_WARNING` ou `PARITY_FAIL` : prochaine étape = corriger timezone/EMA/ATR/timestamp/SLTP, sans optimiser la stratégie.
 
 ## Prochaines Étapes
 

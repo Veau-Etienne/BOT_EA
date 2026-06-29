@@ -81,6 +81,27 @@ Toutes les décisions ci-dessous suivent les métriques, pas l'intuition. Une st
 - Verdict actuel : PARITY À FAIRE, donc toujours À RETRAVAILLER.
 - Raison : le candidat ne peut pas être promu tant que la parité Python/MT5, la résistance coûts x1.5 et l'absence de lookahead ne sont pas vérifiées dans le workflow V2.0.
 
+## V2.1 — Run MT5 parity workflow for US100_H1 candidate
+
+- Date : 2026-06-29.
+- Branche : `research/v2.1-run-mt5-parity`.
+- Candidat : `US100_H1 / nas_trend_pullback_exclude_monday`.
+- Pytest : installé dans `.venv`, requirements figé avec `pip freeze`.
+- Tests anti-lookahead : OK, 4 tests passés.
+- Sécurité EA : commentaire `VERIFIER ONLY — DO NOT USE FOR LIVE TRADING`, `EnableTrading=false` par défaut, aucun `OrderSend`, `CTrade.Buy` ou `CTrade.Sell`.
+- Localisation MT5/Wine : `MT5_PATHS_OK`.
+- Terminal : `/Users/etienneveau/Library/Application Support/net.metaquotes.wine.metatrader5/drive_c/Program Files/MetaTrader 5/terminal64.exe`.
+- MetaEditor : `/Users/etienneveau/Library/Application Support/net.metaquotes.wine.metatrader5/drive_c/Program Files/MetaTrader 5/MetaEditor64.exe`.
+- MQL5/Experts : `/Users/etienneveau/Library/Application Support/net.metaquotes.wine.metatrader5/drive_c/Program Files/MetaTrader 5/MQL5/Experts`.
+- MQL5/Files : `/Users/etienneveau/Library/Application Support/net.metaquotes.wine.metatrader5/drive_c/Program Files/MetaTrader 5/MQL5/Files`.
+- EA verifier : copié vers `MQL5/Experts/US100_H1_TrendPullback_ExcludeMonday_Verifier.mq5`.
+- Compilation automatique : KO/non fiable ; MetaEditor via Wine retourne 0 mais le `.ex5` attendu n'est pas créé.
+- Export signaux Python : OK, 311 signaux exportés vers `data/reports/US100_H1_nas_trend_pullback_exclude_monday_signals.csv`.
+- CSV MT5 : absent, `MQL5/Files/us100_h1_mt5_signals.csv` non trouvé.
+- Comparaison parité : non lancée faute de CSV MT5 ; rapport bloqué écrit avec `PARITY_BLOCKED_MT5_CSV_MISSING`.
+- Verdict : `PARITY_BLOCKED_MT5_CSV_MISSING`.
+- Prochaine action : compiler manuellement dans MetaEditor, attacher l'EA sur `US100.cash` H1 avec `EnableTrading=false`, générer `us100_h1_mt5_signals.csv`, puis relancer `scripts/run_mt5_parity_check.py`.
+
 ## Décision Courante
 
 Le candidat `US100_H1 / nas_trend_pullback_exclude_monday` reste à retravailler. Aucune stratégie n'est validée.

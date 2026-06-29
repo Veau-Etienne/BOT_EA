@@ -2,6 +2,10 @@
 #property version "2.00"
 #property description "US100 H1 trend pullback exclude Monday verifier. Exports MT5 signals for Python parity; trading disabled by default."
 
+// VERIFIER ONLY — DO NOT USE FOR LIVE TRADING
+// This EA is designed to read candles, calculate signals and export them to CSV.
+// It does not call OrderSend, CTrade.Buy, CTrade.Sell or any equivalent trade action.
+
 input bool EnableTrading = false;
 input ENUM_TIMEFRAMES InpTimeframe = PERIOD_H1;
 input int InpEMAFast = 20;
@@ -130,6 +134,8 @@ int OnInit()
 {
    if(EnableTrading)
       Print("EnableTrading=true was requested, but this verifier EA is for parity only. No orders are sent by this EA.");
+   if(!EnableTrading)
+      Print("Verification/export only: EnableTrading=false, no trading allowed.");
 
    EmaFastHandle = iMA(_Symbol, InpTimeframe, InpEMAFast, 0, MODE_EMA, PRICE_CLOSE);
    EmaMidHandle = iMA(_Symbol, InpTimeframe, InpEMAMid, 0, MODE_EMA, PRICE_CLOSE);
