@@ -4,8 +4,10 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import sys
 from dataclasses import asdict, dataclass
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -57,6 +59,8 @@ CSV_COLUMNS = [
 @dataclass(frozen=True)
 class AssetInput:
     label: str
+    symbol: str
+    timeframe: str
     path: Path
 
 
@@ -98,6 +102,11 @@ def parse_args() -> argparse.Namespace:
         "--optimize-candidates",
         action="store_true",
         help="Run light optimization, Monte Carlo and walk-forward only for scanner candidates.",
+    )
+    parser.add_argument(
+        "--diagnostic-full-sample",
+        action="store_true",
+        help="Ignore max total drawdown stops for diagnostics only. Results are non tradable and never VALIDABLE.",
     )
     parser.add_argument("--objective", default="robustness_score", help="Objective used for optional candidate optimization.")
     return parser.parse_args()
@@ -147,7 +156,18 @@ def _parse_asset_inputs(items: list[str]) -> list[AssetInput]:
         path = Path(raw_path.strip())
         if not path.is_absolute():
             path = ROOT / path
-        assets.append(AssetInput(label=label.upper(), path=path))
+        label_upper = label.upper()
+        symbol = label_upper
+        timeframe = ""
+        match = re.fullmatch(r"(.+)_(M\d+|H\d+|D\d+)", label_upper)
+        if match:
+            symbol = match.group(1)
+            timeframe = match.group(2)
+        if not timeframe:
+            stem_match = re.fullmatch(r"(.+)_(M\d+|H\d+|D\d+)", path.stem.upper())
+            if stem_match:
+                timeframe = stem_match.group(2)
+        assets.append(AssetInput(label=label_upper, symbol=symbol, timeframe=timeframe, path=path))
     return assets
 
 
@@ -240,12 +260,13 @@ def _scanner_verdict(metrics: dict[str, Any], stopped_reason: str | None) -> tup
     return "REJETÉE", ";".join(hard_reasons or ["does_not_meet_scanner_candidate_rules"])
 
 
-def _load_assets(asset_inputs: list[AssetInput], assets_config: dict[str, Any], timezone: str, timeframe: str) -> list[LoadedAsset]:
+def _load_assets(asset_inputs: list[AssetInput], assets_config: dict[str, Any], timezone: str, default_timeframe: str) -> list[LoadedAsset]:
     loaded: list[LoadedAsset] = []
     for asset_input in asset_inputs:
         if not asset_input.path.exists():
             raise FileNotFoundError(f"Data file not found for {asset_input.label}: {asset_input.path}")
-        spec = resolve_asset_spec(assets_config, asset_input.label)
+        spec = resolve_asset_spec(assets_config, asset_input.symbol)
+        timeframe = asset_input.timeframe or default_timeframe
         data, cleaning = load_mt5_ohlcv(asset_input.path, timezone=timezone, timeframe=timeframe)
         loaded.append(LoadedAsset(input=asset_input, spec=spec, data=data, cleaning=cleaning))
     return loaded
@@ -257,10 +278,16 @@ def _row_from_metrics(
     strategy_timeframe: str,
     metrics: dict[str, Any],
     stopped_reason: str | None,
+    diagnostic_full_sample: bool,
 ) -> dict[str, Any]:
     verdict, reason = _scanner_verdict(metrics, stopped_reason)
+    if diagnostic_full_sample:
+        reason = ";".join([reason, "diagnostic_full_sample_non_tradable"]) if reason else "diagnostic_full_sample_non_tradable"
+        if verdict == "VALIDABLE":
+            verdict = "À RETRAVAILLER"
     row = {
         "asset": loaded_asset.input.label,
+        "base_asset": loaded_asset.spec.symbol,
         "strategy": strategy_name,
         "timeframe": strategy_timeframe,
         "start_date": loaded_asset.cleaning.first_timestamp,
@@ -280,6 +307,7 @@ def _row_from_metrics(
         "robustness_score": _scanner_robustness_score(metrics, stopped_reason),
         "monthly_stability": float(metrics["monthly_stability_pct"]),
         "stopped_reason": stopped_reason or "",
+        "diagnostic_full_sample": diagnostic_full_sample,
         "data_rows": loaded_asset.cleaning.rows_out,
         "missing_bars": loaded_asset.cleaning.missing_bars,
     }
@@ -291,23 +319,27 @@ def _run_raw_scans(
     strategies_config: dict[str, Any],
     risk_config: dict[str, Any],
     assets_config: dict[str, Any],
+    diagnostic_full_sample: bool,
 ) -> list[RawScan]:
     scans: list[RawScan] = []
     for loaded_asset in loaded_assets:
-        strategy_names = _compatible_strategies(loaded_asset.input.label, strategies_config, assets_config)
+        strategy_names = _compatible_strategies(loaded_asset.input.symbol, strategies_config, assets_config)
         for strategy_name in strategy_names:
             strat_cfg = strategy_config(strategies_config, strategy_name)
             strategy_cls = STRATEGY_REGISTRY[strategy_name]
             asset_spec = resolve_asset_spec(assets_config, strat_cfg["symbol"])
             backtest_config = build_backtest_config(risk_config, strat_cfg)
+            if diagnostic_full_sample:
+                backtest_config = replace(backtest_config, diagnostic_full_sample=True)
             result = BacktestEngine(backtest_config, asset_spec).run(loaded_asset.data, strategy_cls(strat_cfg))
             metrics = calculate_metrics(result.trades, result.equity_curve, backtest_config.initial_capital)
             row = _row_from_metrics(
                 loaded_asset,
                 strategy_name,
-                str(strat_cfg.get("timeframe", "M15")),
+                loaded_asset.input.timeframe or str(strat_cfg.get("timeframe", "M15")),
                 metrics,
                 result.stopped_reason,
+                diagnostic_full_sample,
             )
             scans.append(
                 RawScan(
@@ -342,7 +374,16 @@ def _markdown_table(frame: pd.DataFrame, columns: list[str]) -> str:
         values = []
         for column in available:
             value = row[column]
-            if column in {"profit_factor"}:
+            if column in {"trades", "max_losing_streak", "data_rows", "missing_bars"} and pd.api.types.is_number(value):
+                values.append(str(int(value)))
+            elif pd.api.types.is_number(value):
+                if "profit_factor" in column:
+                    values.append(_display_float(value, 3))
+                elif "expectancy" in column or "drawdown" in column or "profit" in column or "delta" in column:
+                    values.append(_display_float(value, 2))
+                else:
+                    values.append(_display_float(value, 2))
+            elif column in {"profit_factor"}:
                 values.append(_display_float(value, 3))
             elif column in {
                 "profit_net",
@@ -362,7 +403,9 @@ def _markdown_table(frame: pd.DataFrame, columns: list[str]) -> str:
     return "\n".join(lines)
 
 
-def _recommend_next_action(frame: pd.DataFrame, optimize_candidates: bool) -> str:
+def _recommend_next_action(frame: pd.DataFrame, optimize_candidates: bool, diagnostic_full_sample: bool) -> str:
+    if diagnostic_full_sample:
+        return "Mode diagnostic full sample : ne pas trader ni optimiser directement. Utiliser ces résultats pour détecter un problème de coût/timeframe ou reformuler les hypothèses."
     if frame.empty:
         return "Aucune combinaison n'a été testée. Vérifier les fichiers CSV et les symboles configurés."
     validable = frame[frame["verdict"] == "VALIDABLE"]
@@ -390,6 +433,7 @@ def _build_markdown_report(
     output_csv: Path,
     optimize_candidates: bool,
     candidate_artifacts: list[str],
+    diagnostic_full_sample: bool,
 ) -> str:
     counts = frame["verdict"].value_counts().to_dict() if not frame.empty else {}
     total = int(len(frame))
@@ -401,19 +445,20 @@ def _build_markdown_report(
     expectancy_sorted = _sort_for_top(frame, "expectancy")
 
     asset_lines = [
-        "| asset | file | rows | period | missing_bars | spread_avg |",
-        "| --- | --- | --- | --- | --- | --- |",
+        "| asset | base_asset | timeframe | file | rows | period | missing_bars | spread_avg |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for loaded in loaded_assets:
         cleaning = loaded.cleaning
         period = f"{cleaning.first_timestamp} -> {cleaning.last_timestamp}"
         spread = "" if cleaning.spread_mean is None else _display_float(cleaning.spread_mean, 2)
         asset_lines.append(
-            f"| {loaded.input.label} | {loaded.input.path} | {cleaning.rows_out} | {period} | {cleaning.missing_bars} | {spread} |"
+            f"| {loaded.input.label} | {loaded.spec.symbol} | {loaded.input.timeframe or ''} | {loaded.input.path} | {cleaning.rows_out} | {period} | {cleaning.missing_bars} | {spread} |"
         )
 
     columns = [
         "asset",
+        "timeframe",
         "strategy",
         "trades",
         "profit_net",
@@ -424,6 +469,8 @@ def _build_markdown_report(
         "verdict",
         "rejection_reason",
     ]
+    reworkable_frame = frame[frame["verdict"] == "À RETRAVAILLER"].sort_values("robustness_score", ascending=False) if not frame.empty else pd.DataFrame()
+    rejected_frame = frame[frame["verdict"] == "REJETÉE"].sort_values(["robustness_score", "profit_factor"], ascending=False) if not frame.empty else pd.DataFrame()
     detail_parts: list[str] = []
     for asset in sorted(frame["asset"].unique()) if not frame.empty else []:
         per_asset = frame[frame["asset"] == asset].sort_values(["verdict", "robustness_score"], ascending=[True, False])
@@ -431,13 +478,16 @@ def _build_markdown_report(
 
     rejected_reasons = frame[frame["verdict"] == "REJETÉE"][["asset", "strategy", "rejection_reason"]] if not frame.empty else pd.DataFrame()
     artifacts = "\n".join(f"- {artifact}" for artifact in candidate_artifacts) if candidate_artifacts else "- Aucun artefact candidat généré."
-    validation_mode = (
-        "Optimisation légère et validation candidat activées."
-        if optimize_candidates
-        else "Scan brut uniquement. Aucune optimisation, aucun walk-forward et aucun Monte Carlo candidat n'ont été lancés."
-    )
+    if diagnostic_full_sample:
+        validation_mode = "Diagnostic full sample non tradable. L'arrêt max_total_drawdown est ignoré et aucun résultat ne peut être VALIDABLE."
+    elif optimize_candidates:
+        validation_mode = "Optimisation légère et validation candidat activées."
+    else:
+        validation_mode = "Scan brut uniquement. Aucune optimisation, aucun walk-forward et aucun Monte Carlo candidat n'ont été lancés."
 
-    return f"""# Strategy Scanner V1.5
+    improvement_table = _timeframe_improvements(frame)
+
+    return f"""# Strategy Scanner V1.6
 
 ## Résumé global
 
@@ -464,6 +514,18 @@ def _build_markdown_report(
 
 {_markdown_table(expectancy_sorted, columns)}
 
+## Améliorations M15 -> M30/H1
+
+{improvement_table}
+
+## Stratégies Devenues À Retravailler
+
+{_markdown_table(reworkable_frame, columns)}
+
+## Stratégies Toujours Rejetées
+
+{_markdown_table(rejected_frame, columns)}
+
 ## Détails par actif
 
 {chr(10).join(detail_parts) if detail_parts else "_Aucun détail disponible._"}
@@ -478,12 +540,57 @@ def _build_markdown_report(
 
 ## Prochaine action recommandée
 
-{_recommend_next_action(frame, optimize_candidates)}
+{_recommend_next_action(frame, optimize_candidates, diagnostic_full_sample)}
 """
 
 
 def _candidate_scans(scans: list[RawScan]) -> list[RawScan]:
     return [scan for scan in scans if scan.row["verdict"] in {"VALIDABLE", "À RETRAVAILLER"}]
+
+
+def _timeframe_improvements(frame: pd.DataFrame) -> str:
+    if frame.empty or not {"base_asset", "timeframe", "strategy", "profit_factor", "expectancy"}.issubset(frame.columns):
+        return "_Aucun comparatif timeframe disponible._"
+    rows: list[dict[str, Any]] = []
+    grouped = frame.groupby(["base_asset", "strategy"], dropna=False)
+    for (base_asset, strategy), group in grouped:
+        baseline = group[group["timeframe"] == "M15"]
+        if baseline.empty:
+            continue
+        base_row = baseline.iloc[0]
+        for _, row in group[group["timeframe"].isin(["M30", "H1"])].iterrows():
+            rows.append(
+                {
+                    "base_asset": base_asset,
+                    "strategy": strategy,
+                    "timeframe": row["timeframe"],
+                    "m15_profit_factor": base_row["profit_factor"],
+                    "tf_profit_factor": row["profit_factor"],
+                    "profit_factor_delta": _finite(row["profit_factor"]) - _finite(base_row["profit_factor"]),
+                    "m15_expectancy": base_row["expectancy"],
+                    "tf_expectancy": row["expectancy"],
+                    "expectancy_delta": _finite(row["expectancy"]) - _finite(base_row["expectancy"]),
+                    "verdict": row["verdict"],
+                }
+            )
+    if not rows:
+        return "_Aucun comparatif timeframe disponible._"
+    improvements = pd.DataFrame(rows).sort_values(["profit_factor_delta", "expectancy_delta"], ascending=False).head(10)
+    return _markdown_table(
+        improvements,
+        [
+            "base_asset",
+            "strategy",
+            "timeframe",
+            "m15_profit_factor",
+            "tf_profit_factor",
+            "profit_factor_delta",
+            "m15_expectancy",
+            "tf_expectancy",
+            "expectancy_delta",
+            "verdict",
+        ],
+    )
 
 
 def _run_candidate_artifacts(scans: list[RawScan], output: Path, objective: str) -> list[str]:
@@ -557,14 +664,31 @@ def main() -> None:
     risk_config = load_yaml(args.risk_config)
     asset_inputs = _parse_asset_inputs(args.assets)
     loaded_assets = _load_assets(asset_inputs, assets_config, args.timezone, args.timeframe)
-    scans = _run_raw_scans(loaded_assets, strategies_config, risk_config, assets_config)
+    scans = _run_raw_scans(loaded_assets, strategies_config, risk_config, assets_config, args.diagnostic_full_sample)
     frame = pd.DataFrame([scan.row for scan in scans])
     if not frame.empty:
         frame = frame.sort_values(["verdict", "robustness_score"], ascending=[True, False]).reset_index(drop=True)
-    frame.to_csv(output_csv, index=False, columns=[column for column in [*CSV_COLUMNS, "robustness_score", "monthly_stability", "stopped_reason", "data_rows", "missing_bars"] if column in frame.columns])
+    frame.to_csv(
+        output_csv,
+        index=False,
+        columns=[
+            column
+            for column in [
+                *CSV_COLUMNS,
+                "base_asset",
+                "robustness_score",
+                "monthly_stability",
+                "stopped_reason",
+                "diagnostic_full_sample",
+                "data_rows",
+                "missing_bars",
+            ]
+            if column in frame.columns
+        ],
+    )
 
-    candidate_artifacts = _run_candidate_artifacts(scans, output, args.objective) if args.optimize_candidates else []
-    report = _build_markdown_report(frame, loaded_assets, output_csv, args.optimize_candidates, candidate_artifacts)
+    candidate_artifacts = _run_candidate_artifacts(scans, output, args.objective) if args.optimize_candidates and not args.diagnostic_full_sample else []
+    report = _build_markdown_report(frame, loaded_assets, output_csv, args.optimize_candidates, candidate_artifacts, args.diagnostic_full_sample)
     output.write_text(report, encoding="utf-8")
 
     counts = frame["verdict"].value_counts().to_dict() if not frame.empty else {}
@@ -574,6 +698,8 @@ def main() -> None:
     print(f"VALIDABLE: {int(counts.get('VALIDABLE', 0))}")
     print(f"À RETRAVAILLER: {int(counts.get('À RETRAVAILLER', 0))}")
     print(f"REJETÉE: {int(counts.get('REJETÉE', 0))}")
+    if args.diagnostic_full_sample:
+        print("Mode diagnostic full sample: non tradable, max_total_drawdown ignored, VALIDABLE disabled.")
     if not frame.empty:
         columns = ["asset", "strategy", "trades", "profit_factor", "expectancy", "max_drawdown", "robustness_score", "verdict"]
         print(frame.sort_values("robustness_score", ascending=False).head(10)[columns].to_string(index=False))
