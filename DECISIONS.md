@@ -105,6 +105,24 @@ Toutes les décisions ci-dessous suivent les métriques, pas l'intuition. Une st
 - Verdict : `PARITY_FAIL`, candidat toujours À RETRAVAILLER.
 - Prochaine action : corriger la divergence Python/MT5 avant toute nouvelle validation ; priorités d'analyse : source de données broker vs CSV Python, timestamp de bougie, warmup EMA/ATR, prix bid/ask/spread, calcul SL/TP et règles d'entrée multiples par session.
 
+## V2.2 — Debug MT5/Python parity mismatch
+
+- Date : 2026-06-30.
+- Branche : `research/v2.2-debug-mt5-parity`.
+- Rappel V2.1 : Python 311 signaux, MT5 367 signaux, 57 extras MT5, 1 manquant MT5, verdict `PARITY_FAIL`.
+- DataDump EA : `mql5/Experts/US100_H1_DataDump_Verifier.mq5`, `EnableTrading=false`, aucun ordre, compilation OK.
+- Strategy Tester DataDump : `US100.cash` H1, 2023-02-27 -> 2026-02-25, 17 673 bougies exportées.
+- Bar parity Python resamplé M15 vs MT5 H1 : `BAR_PARITY_FAIL`, 17 692 bougies Python, 17 673 bougies MT5, 17 672 timestamps communs, 1 timestamp MT5 absent côté Python, 20 timestamps Python absents côté MT5.
+- Écarts OHLC : open moyen 6.54 points, close moyen 4.01 points ; max open 4 156 points, max close 2 140 points. La source H1 Python resamplée n'est pas strictement identique aux bougies H1 Strategy Tester.
+- Signal parity avant correction avec bougies Python resamplées : `PARITY_FAIL`, 310 timestamps communs, 57 extras MT5, 1 manquant MT5.
+- Signal parity avant correction avec bougies MT5 importées : `PARITY_FAIL`, 311 timestamps communs, 56 extras MT5, 0 manquant MT5 ; les prix communs deviennent alignés à moins de 0.50 point.
+- Cause principale trouvée : `ENTRY_RULE_MISMATCH_CONFIRMED`. L'EA MQL5 comparait le pullback de la bougie précédente (`prev.low/high`) avec l'EMA fast de la bougie courante. Python compare `prev.low/high` avec l'EMA fast de la bougie précédente.
+- Correction effectuée : `US100_H1_TrendPullback_ExcludeMonday_Verifier.mq5` utilise maintenant `emaFastPrev` pour `pullbackLong` et `pullbackShort`. Aucune règle de trading n'a été optimisée ou changée côté stratégie Python.
+- Signal parity après correction avec bougies Python resamplées : `PARITY_FAIL` résiduel, 310 timestamps communs, 1 extra MT5, 1 manquant MT5 ; ce résidu vient de la source de données H1 non strictement identique.
+- Signal parity après correction avec bougies MT5 importées : `PARITY_OK`, 311 timestamps communs, 0 extra, 0 manquant, 0 mismatch direction.
+- Verdict : `PARITY_FIXED` pour l'implémentation MT5/Python quand la même source H1 MT5 est utilisée ; `DATA_MISMATCH_CONFIRMED` pour `data/resampled/US100_H1.csv` vs bougies H1 MT5.
+- Prochaine action : pour toute validation MT5 stricte, exporter/importer les bougies H1 du Strategy Tester ou aligner officiellement la source H1 avant backtest ; ne pas promouvoir le candidat tant que la décision data source n'est pas figée.
+
 ## Décision Courante
 
 Le candidat `US100_H1 / nas_trend_pullback_exclude_monday` reste à retravailler. Aucune stratégie n'est validée.

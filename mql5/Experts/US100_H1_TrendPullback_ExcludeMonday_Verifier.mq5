@@ -211,11 +211,14 @@ void OnTick()
       return;
 
    double emaFast = 0.0;
+   double emaFastPrev = 0.0;
    double emaMid = 0.0;
    double emaMidPast = 0.0;
    double emaSlow = 0.0;
    double atr = 0.0;
    if(!BufferValue(EmaFastHandle, 1, emaFast))
+      return;
+   if(!BufferValue(EmaFastHandle, 2, emaFastPrev))
       return;
    if(!BufferValue(EmaMidHandle, 1, emaMid))
       return;
@@ -231,8 +234,8 @@ void OnTick()
    double emaMidSlope = emaMid - emaMidPast;
    bool longOk = row.close > emaSlow && emaMidSlope > 0.0;
    bool shortOk = row.close < emaSlow && emaMidSlope < 0.0;
-   bool pullbackLong = prev.low <= emaFast;
-   bool pullbackShort = prev.high >= emaFast;
+   bool pullbackLong = prev.low <= emaFastPrev;
+   bool pullbackShort = prev.high >= emaFastPrev;
    bool resumeLong = row.close > row.open && row.close > prev.high;
    bool resumeShort = row.close < row.open && row.close < prev.low;
 

@@ -84,7 +84,13 @@ def main() -> None:
         verdict = "PARITY_WARNING"
     elif missing_mt5.empty and extra_mt5.empty and direction_mismatch == 0 and price_failures == 0:
         verdict = "PARITY_OK"
-    elif len(joined) == 0 or direction_mismatch > 0 or len(missing_mt5) > max(5, 0.05 * len(py)) or price_failures > max(5, 0.05 * max(len(joined), 1)):
+    elif (
+        len(joined) == 0
+        or direction_mismatch > 0
+        or len(missing_mt5) > max(5, 0.05 * len(py))
+        or len(extra_mt5) > max(5, 0.05 * len(mt5))
+        or price_failures > max(5, 0.05 * max(len(joined), 1))
+    ):
         verdict = "PARITY_FAIL"
     else:
         verdict = "PARITY_WARNING"

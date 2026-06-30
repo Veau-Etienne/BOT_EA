@@ -87,17 +87,23 @@
 - CSV MT5 généré dans le dossier agent Strategy Tester.
 - Parité Python/MT5 exécutée : `PARITY_FAIL`, 311 signaux Python contre 367 signaux MT5, 57 extras MT5, 1 manquant MT5, 0 mismatch direction.
 
-## En Cours
-
 ### V2.2 - Correction Parité Python/MT5
 
-- Inspecter les 57 signaux supplémentaires MT5 et le signal Python manquant.
-- Comparer les données source MT5 Strategy Tester avec `data/resampled/US100_H1.csv`.
-- Vérifier timestamp de bougie, warmup EMA/ATR, spread bid/ask, arrondi broker et calcul SL/TP.
-- Corriger l'implémentation la plus fautive sans optimiser la stratégie.
-- Relancer `scripts/run_mt5_parity_check.py`.
-- Si `PARITY_OK` : prochaine étape = forward test observation only, sans trading live.
-- Si `PARITY_WARNING` ou `PARITY_FAIL` : candidat reste À RETRAVAILLER.
+- DataDump EA ajouté pour exporter bougies H1 et indicateurs MT5.
+- Bar parity exécutée : `BAR_PARITY_FAIL` entre `data/resampled/US100_H1.csv` et les bougies H1 MT5.
+- Cause principale des 57 extras MT5 identifiée : l'EA vérificateur utilisait l'EMA fast courante pour tester le pullback de la bougie précédente.
+- Correction appliquée : pullback MQL5 sur `prev.low/high` vs EMA fast précédente, comme Python.
+- Signal parity après correction avec bougies MT5 importées : `PARITY_OK`, 311 signaux communs, 0 extra, 0 manquant.
+- Signal parity après correction avec bougies Python resamplées : reste `PARITY_FAIL` résiduel par source de données, 1 extra MT5 et 1 manquant MT5.
+
+## En Cours
+
+### V2.3 - Décision Source H1 Officielle
+
+- Décider si la validation stricte US100 H1 doit utiliser les bougies H1 exportées de MT5 ou le resampling M15 interne.
+- Si MT5 devient la source de référence, regénérer le pack backtest/Monte Carlo/walk-forward sur `US100_H1_FROM_MT5.csv`.
+- Si le resampling M15 reste la source de référence, expliquer et accepter l'écart MT5 résiduel avant toute suite.
+- Ne pas optimiser la stratégie tant que cette décision data source n'est pas figée.
 
 ## Prochaines Étapes
 

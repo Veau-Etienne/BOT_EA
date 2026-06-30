@@ -110,12 +110,56 @@ Commande directe si le CSV MT5 est connu :
 - `PARITY_FAIL` : parité échouée, corriger timezone, EMA, ATR, timestamp, spread ou SL/TP.
 - `PARITY_BLOCKED_MT5_CSV_MISSING` : le CSV MT5 n'existe pas encore, générer le fichier depuis MT5.
 
+## Convention De Signal
+
+- Les signaux utilisent uniquement des bougies clôturées.
+- Le timestamp du signal est le timestamp de la bougie de signal clôturée.
+- Le prix de décision est le close de cette bougie de signal.
+- Le prix d'entrée exporté est théorique : close +/- demi-spread +/- slippage.
+- Le filtre lundi utilise le jour du timestamp de la bougie de signal.
+- La pente EMA50 est calculée sur la bougie de signal : `ema_mid[i] - ema_mid[i - 4]`.
+- La condition de pullback utilise la bougie précédente et l'EMA de la bougie précédente :
+  - long : `prev.low <= prev.ema_fast`
+  - short : `prev.high >= prev.ema_fast`
+- La reprise utilise la bougie de signal et la bougie précédente :
+  - long : `close > open` et `close > prev.high`
+  - short : `close < open` et `close < prev.low`
+
+## Diagnostic Bougies MT5
+
+Pour exporter les bougies et indicateurs H1 utilisés par Strategy Tester :
+
+```bash
+.venv/bin/python scripts/prepare_mt5_verifier.py \
+  --ea mql5/Experts/US100_H1_DataDump_Verifier.mq5
+```
+
+Le fichier attendu est `us100_h1_mt5_bars_indicators.csv`. Il peut être dans `MQL5/Files` ou dans `Tester/Agent-*/MQL5/Files` selon le mode de lancement.
+
+Comparer les bougies :
+
+```bash
+.venv/bin/python scripts/compare_mt5_python_bars.py \
+  --python-bars data/resampled/US100_H1.csv \
+  --mt5-bars data/reports/US100_H1_mt5_bars_indicators.csv \
+  --output data/reports/US100_H1_bar_parity_report.md
+```
+
+Importer les bougies MT5 pour isoler la logique :
+
+```bash
+.venv/bin/python scripts/import_mt5_h1_bars.py \
+  --mt5-bars data/reports/US100_H1_mt5_bars_indicators.csv \
+  --output data/resampled/US100_H1_FROM_MT5.csv
+```
+
 ## Dernier Résultat US100 H1
 
 - Date : 2026-06-30.
-- Compilation EA : OK via le Wine embarqué dans l'app MetaTrader 5.
+- Compilation EAs : OK via le Wine embarqué dans l'app MetaTrader 5.
 - Strategy Tester : OK sur `US100.cash` H1, sans ordre réel.
-- Signaux Python : 311.
-- Signaux MT5 : 367.
-- Verdict : `PARITY_FAIL`.
-- Conclusion : ne pas promouvoir le candidat ; corriger d'abord la divergence de données ou de logique Python/MT5.
+- Avant V2.2 : Python 311 signaux, MT5 367 signaux, verdict `PARITY_FAIL`.
+- Cause trouvée : l'EA MQL5 utilisait l'EMA fast courante pour le pullback de la bougie précédente.
+- Après correction et avec bougies MT5 importées : Python 311 signaux, MT5 311 signaux, verdict `PARITY_OK`.
+- Avec `data/resampled/US100_H1.csv` : parité résiduelle encore imparfaite à cause des différences de source H1.
+- Conclusion : la logique Python/MT5 est alignée ; la prochaine décision porte sur la source H1 officielle.

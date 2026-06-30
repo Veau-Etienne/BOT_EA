@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import subprocess
 import sys
@@ -61,6 +62,26 @@ def _read_log_text(log_path: Path) -> str:
     return ""
 
 
+def _mt5_root_from_path(path: Path) -> Path | None:
+    parts = path.parts
+    try:
+        mql5_index = parts.index("MQL5")
+    except ValueError:
+        return None
+    return Path(*parts[:mql5_index])
+
+
+def _wineprefix_from_mt5_root(mt5_root: Path | None) -> Path | None:
+    if mt5_root is None:
+        return None
+    parts = mt5_root.parts
+    try:
+        drive_c_index = parts.index("drive_c")
+    except ValueError:
+        return None
+    return Path(*parts[:drive_c_index])
+
+
 def _windows_mt5_path(path: Path) -> str | None:
     parts = path.parts
     try:
@@ -76,9 +97,20 @@ def _try_compile(metaeditor: Path, ea_dest: Path) -> tuple[str, str]:
     if not wine:
         return "AUTO_COMPILE_NOT_AVAILABLE", "Wine executable not found in PATH or common macOS Wine app paths."
 
-    log_path = ea_dest.parent.parent / "Files" / f"compile_{ea_dest.stem}.log"
+    stem_tag = "".join(ch for ch in ea_dest.stem.lower() if ch.isalnum() or ch == "_")
+    log_path = ea_dest.parent.parent / "Files" / f"compile_{stem_tag}.log"
     ex5_path = ea_dest.with_suffix(".ex5")
     winepath = shutil.which("winepath")
+    mt5_root = _mt5_root_from_path(ea_dest)
+    wineprefix = _wineprefix_from_mt5_root(mt5_root)
+    if wineprefix and mt5_root:
+        alias = wineprefix / "drive_c" / "MT5"
+        try:
+            if alias.exists() or alias.is_symlink():
+                alias.unlink()
+            alias.symlink_to(mt5_root)
+        except OSError:
+            pass
     compile_target = _windows_mt5_path(ea_dest) or str(ea_dest)
     compile_log = _windows_mt5_path(log_path) or str(log_path)
     if "\\" not in compile_target and winepath:
@@ -89,9 +121,17 @@ def _try_compile(metaeditor: Path, ea_dest: Path) -> tuple[str, str]:
             compile_target = str(ea_dest)
             compile_log = str(log_path)
     log_path.parent.mkdir(parents=True, exist_ok=True)
+    for stale in [log_path, ex5_path]:
+        try:
+            stale.unlink()
+        except FileNotFoundError:
+            pass
     command = [wine, str(metaeditor), f"/compile:{compile_target}", f"/log:{compile_log}"]
     try:
-        completed = subprocess.run(command, check=False, capture_output=True, text=True, timeout=60)
+        env = None
+        if wineprefix:
+            env = {**os.environ, "WINEPREFIX": str(wineprefix)}
+        completed = subprocess.run(command, check=False, capture_output=True, text=True, timeout=60, env=env)
     except Exception as exc:  # noqa: BLE001
         return "AUTO_COMPILE_KO", f"Compilation command failed to run: {exc}"
 
