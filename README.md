@@ -4,7 +4,7 @@ Laboratoire local de trading algorithmique pour tester des hypothèses sur donn�
 
 Statut scientifique actuel : aucune stratégie n'est validée. Toutes les hypothèses M15 testées jusqu'à V1.5 sont rejetées.
 
-Statut courant V2.3 : le candidat prioritaire `US100_H1 / nas_trend_pullback_exclude_monday` reste un candidat de recherche fragile, non tradable. Sa source officielle de validation est maintenant l'export H1 MT5 Strategy Tester (`data/resampled/US100_H1_FROM_MT5.csv`), pas le H1 resamplé depuis M15. Le mode d'exécution réaliste est `next_bar_open`. Aucun live, aucune activation AutoTrading, aucune exécution réelle.
+Statut courant V2.4 : la recherche ne vise pas une stratégie parfaite unique, mais un portefeuille d'edges robustes peu corrélés. Le candidat prioritaire `US100_H1 / nas_trend_pullback_exclude_monday` reste fragile (PF 1.335 base, 1.163 sous coûts x1.5). L'exploration V2.4 sur XAUUSD M15/M30 a testé 4 nouvelles familles : 3 rejetées, 1 à retravailler (`xau_m30_session_momentum_continuation`, PF 1.118). Aucun live, aucune activation AutoTrading, aucune exécution réelle.
 
 Ce dépôt ne fournit aucun conseil financier. Les résultats de backtest ne doivent jamais être utilisés comme promesse de performance ou comme justification d'un risque réel.
 
@@ -147,9 +147,13 @@ Sanity check data/config :
 
 XAUUSD :
 
-- `xau_trend_breakout`
-- `xau_failed_breakout_reversal`
-- `xau_pullback_trend`
+- `xau_trend_breakout` (rejetée)
+- `xau_failed_breakout_reversal` (rejetée)
+- `xau_pullback_trend` (rejetée)
+- `xau_liquidity_sweep_reversal` (V2.4 — rejetée)
+- `xau_m30_htf_trend_pullback` (V2.4 — rejetée)
+- `xau_volatility_compression_retest` (V2.4 — rejetée)
+- `xau_m30_session_momentum_continuation` (V2.4 — à retravailler)
 
 US100/NAS100 :
 
@@ -179,12 +183,14 @@ Voir [docs/validation_rules.md](docs/validation_rules.md).
 
 ## État Scientifique Actuel
 
-Résultat V1.5 :
+Résultat V2.4 (cumul) :
 
-- 7 stratégies testées ;
-- 0 `VALIDABLE` ;
-- 0 `À RETRAVAILLER` ;
-- 7 `REJETÉE`.
+- 14 combinaisons testées.
+- 0 `VALIDABLE` (stratégie entièrement validée).
+- 1 candidat fragile : `US100_H1 / nas_trend_pullback_exclude_monday`, PF 1.335 base, non tradable.
+- 1 `À RETRAVAILLER` XAU : `xau_m30_session_momentum_continuation` M30, PF 1.118, 649 trades.
+- Le reste : `REJETÉE`.
+- Objectif portefeuille : chercher plusieurs edges peu corrélés avant d'envisager un live.
 
 Les stratégies M15 rejetées ne doivent pas être optimisées davantage. La V1.6 vérifie d'abord que le backtester, les coûts, les points, les spreads, les timezones et les sessions ne pénalisent pas artificiellement les résultats.
 

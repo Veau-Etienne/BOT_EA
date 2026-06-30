@@ -1,0 +1,53 @@
+# V2.4 — XAUUSD M15/M30 exploration matrix
+# Each entry: one backtest run. cost_multipliers is expanded per run.
+# entry_mode is forced to next_bar_open for all serious candidates.
+#
+# Rules:
+#   - PF < 1.0 → REJETÉE (do not optimize)
+#   - PF 1.05-1.20 → À RETRAVAILLER
+#   - PF > 1.20, expectancy positive, DD controlled → CANDIDAT SÉRIEUX
+#   - All candidates auto-trigger Monte Carlo
+
+candidate_threshold_pf: 1.05
+candidate_auto_monte_carlo: true
+
+entries:
+  # Famille A — XAU M15 Liquidity Sweep Reversal
+  - asset: XAUUSD
+    timeframe: M15
+    data: data/raw/XAUUSD_M15.csv
+    strategy: xau_liquidity_sweep_reversal
+    entry_mode: next_bar_open
+    cost_multipliers: [1.0, 1.5]
+
+  # Famille B — XAU M30 HTF Trend Pullback
+  - asset: XAUUSD
+    timeframe: M30
+    data: data/resampled/XAUUSD_M30.csv
+    strategy: xau_m30_htf_trend_pullback
+    entry_mode: next_bar_open
+    cost_multipliers: [1.0, 1.5]
+
+  # Famille C — XAU M15 Volatility Compression Retest
+  - asset: XAUUSD
+    timeframe: M15
+    data: data/raw/XAUUSD_M15.csv
+    strategy: xau_volatility_compression_retest
+    entry_mode: next_bar_open
+    cost_multipliers: [1.0, 1.5]
+
+  # Famille D — XAU M30 Session Momentum Continuation
+  - asset: XAUUSD
+    timeframe: M30
+    data: data/resampled/XAUUSD_M30.csv
+    strategy: xau_m30_session_momentum_continuation
+    entry_mode: next_bar_open
+    cost_multipliers: [1.0, 1.5]
+
+  # Baseline — US100 H1 candidat actuel (référence de comparaison)
+  - asset: US100
+    timeframe: H1
+    data: data/resampled/US100_H1_FROM_MT5.csv
+    strategy: nas_trend_pullback_exclude_monday
+    entry_mode: next_bar_open
+    cost_multipliers: [1.0, 1.5]

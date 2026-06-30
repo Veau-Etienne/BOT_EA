@@ -106,13 +106,28 @@
 - Trade parity coûts x1.5 : `TRADE_PARITY_OK` avec tolérance d'exécution 35 points / 2 USD PnL.
 - Statut : candidat fragile, non validé, non tradable.
 
+### V2.4 — XAUUSD M15/M30 Strategy Exploration
+
+- 4 nouvelles familles de stratégies XAU créées : liquidity sweep, HTF trend pullback, compression retest, session momentum.
+- Matrice d'exploration multi-stratégies lancée (entry_mode next_bar_open, coûts x1.0 et x1.5).
+- Résultats : 3 stratégies rejetées (PF < 1.05), 1 à retravailler (`xau_m30_session_momentum_continuation`, PF 1.118).
+- US100 H1 reste le meilleur candidat (PF 1.335, CANDIDAT SÉRIEUX base costs).
+- Aucune stratégie XAU validée, aucune stratégie live.
+
 ## En Cours
 
-### V2.4 - Forward Observation / Reformulation
+### V2.5 — XAU M30 Session Momentum Deep Analysis (si priorité)
 
-- Si le candidat reste prioritaire : lancer uniquement une observation forward/demo sans ordre réel, avec source MT5 H1 officielle.
-- Si la robustesse coûts prime : reformuler l'hypothèse, car coûts x1.5 ramènent PF sous 1.20.
-- Si une parité trade stricte à 5 points est exigée : exporter plus de précision ou harmoniser les arrondis d'entrée MT5/Python avant toute suite.
+- Walk-forward `xau_m30_session_momentum_continuation`.
+- Analyse concentration mensuelle et stress tests.
+- Corrélation avec US100 H1 pour évaluer la diversification potentielle.
+- Ne pas optimiser les paramètres sans d'abord valider la robustesse temporelle.
+- Décision : promouvoir ou rejeter.
+
+### Observation Forward US100 H1
+
+- Si le candidat reste prioritaire : observation forward/demo sans ordre réel.
+- Source MT5 H1 officielle uniquement.
 - Aucun live tant qu'aucune stratégie n'est validée.
 
 ## Prochaines Étapes

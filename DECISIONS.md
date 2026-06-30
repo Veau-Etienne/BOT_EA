@@ -140,6 +140,66 @@ Toutes les décisions ci-dessous suivent les métriques, pas l'intuition. Une st
 - Raison : le candidat survit au passage `next_bar_open` et la parité de trades est exploitable, mais le stress coûts x1.5 fait passer PF sous 1.20 et concentre 65.22% du profit sur un seul mois. Toujours non tradable.
 - Prochaine action : pas de live ; soit forward observation only sur données MT5 H1 officielles, soit reformuler le signal si la robustesse coûts doit être prioritaire.
 
+## V2.4 — XAUUSD M15/M30 strategy exploration
+
+- Date : 2026-06-30.
+- Branche : `research/v2.4-xau-m15-m30-strategy-exploration`.
+- Motivation : US100 H1 est fragile (PF 1.163 sous coûts x1.5, concentration 65%) ; explorer des familles distinctes.
+- Source données XAU M15 : `data/raw/XAUUSD_M15.csv`.
+- Source données XAU M30 : `data/resampled/XAUUSD_M30.csv` (resamplé depuis M15).
+- Entry mode : next_bar_open pour tous les backtests.
+- Protocole : backtest brut strict, aucune optimisation, coûts x1.0 et x1.5.
+
+### Stratégies ajoutées
+
+| Stratégie | Fichier | Timeframe | Hypothèse |
+|---|---|---|---|
+| xau_liquidity_sweep_reversal | xau_liquidity_sweep_reversal.py | M15 | Sweep range extremes + réintégration |
+| xau_m30_htf_trend_pullback | xau_m30_htf_trend_pullback.py | M30 | EMA50/200 trend + pullback EMA20 |
+| xau_volatility_compression_retest | xau_volatility_compression_retest.py | M15 | Compression ATR + breakout + retest |
+| xau_m30_session_momentum_continuation | xau_m30_session_momentum_continuation.py | M30 | 2 bougies consécutives + EMA50 session |
+
+### Résultats bruts V2.4 (next_bar_open, diagnostic strict)
+
+| Stratégie | Actif | TF | Coûts | Trades | PF | DD | Verdict |
+|---|---|---|---|---|---|---|---|
+| xau_liquidity_sweep_reversal | XAUUSD | M15 | x1.0 | 238 | 0.790 | 4.86% | REJETÉE |
+| xau_liquidity_sweep_reversal | XAUUSD | M15 | x1.5 | 218 | 0.769 | 4.89% | REJETÉE |
+| xau_m30_htf_trend_pullback | XAUUSD | M30 | x1.0 | 324 | 1.032 | 2.96% | REJETÉE |
+| xau_m30_htf_trend_pullback | XAUUSD | M30 | x1.5 | 319 | 0.997 | 3.48% | REJETÉE |
+| xau_volatility_compression_retest | XAUUSD | M15 | x1.0 | 36 | 0.329 | 4.80% | REJETÉE |
+| xau_volatility_compression_retest | XAUUSD | M15 | x1.5 | 34 | 0.309 | 4.84% | REJETÉE |
+| xau_m30_session_momentum_continuation | XAUUSD | M30 | x1.0 | 649 | 1.118 | 3.50% | À RETRAVAILLER |
+| xau_m30_session_momentum_continuation | XAUUSD | M30 | x1.5 | 642 | 1.087 | 3.94% | À RETRAVAILLER |
+
+### Comparaison avec US100 H1 (baseline)
+
+| Stratégie | Actif | TF | Coûts | Trades | PF | DD | MC p95 DD | Verdict |
+|---|---|---|---|---|---|---|---|---|
+| nas_trend_pullback_exclude_monday | US100 | H1 | x1.0 | 200 | 1.335 | 0.90% | 2.02% | CANDIDAT SÉRIEUX |
+| nas_trend_pullback_exclude_monday | US100 | H1 | x1.5 | 200 | 1.163 | 0.99% | 2.43% | À RETRAVAILLER |
+
+### Stratégies rejetées V2.4
+
+- `xau_liquidity_sweep_reversal` M15 : PF 0.79, edge négatif. L'hypothèse sweep/réintégration sur range 20 bars ne tient pas statistiquement sur XAUUSD M15.
+- `xau_volatility_compression_retest` M15 : PF 0.329, seulement 36 trades. Le signal est trop rare et surtout non profitable. La compression + retest n'offre pas d'edge sur ce setup.
+- `xau_m30_htf_trend_pullback` M30 : PF 1.032, légèrement au-dessus de 1 mais en dessous du seuil 1.05. La marge est insuffisante et les coûts x1.5 le ramènent en dessous de 1. REJETÉ.
+
+### Candidat à analyser V2.4
+
+- `xau_m30_session_momentum_continuation` M30 : PF 1.118 (x1.0), PF 1.087 (x1.5), 649 trades, DD 3.5%, MC p95 DD 6.94%.
+- Classé À RETRAVAILLER. Trop proche du seuil 1.05 sous coûts x1.5 (1.087) pour être sérieux sans analyse complémentaire.
+- Pas de promotion en candidat tant que walk-forward et concentration mensuelle ne sont pas vérifiés.
+- Corrélation avec US100 H1 : possible diversification si le pattern horaire est orthogonal, mais insuffisant pour un portefeuille sans validation.
+
+### Décision V2.4
+
+- Aucune stratégie XAU V2.4 n'est validée.
+- Aucune stratégie XAU V2.4 n'est promue en candidat sérieux.
+- `xau_m30_session_momentum_continuation` est le seul candidat à retravailler, avec PF marginal sous coûts réels.
+- US100 H1 reste le meilleur candidat connu (PF 1.335 base costs), mais toujours fragile et non tradable.
+- Prochaine action : analyser `xau_m30_session_momentum_continuation` en profondeur (walk-forward, concentration, stress) OU reformuler les hypothèses XAU avec des filtres plus stricts.
+
 ## Décision Courante
 
-Le candidat `US100_H1 / nas_trend_pullback_exclude_monday` reste à retravailler. Aucune stratégie n'est validée.
+Le candidat `US100_H1 / nas_trend_pullback_exclude_monday` reste prioritaire mais fragile. Aucune stratégie XAU V2.4 n'est validée. `xau_m30_session_momentum_continuation` est à surveiller. Aucune stratégie n'est validée pour le live.

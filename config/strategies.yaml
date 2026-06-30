@@ -179,3 +179,79 @@ strategies:
     tp_mode: "range_mid"
     tp_r_multiple: 1.0
     max_trades_per_day: 2
+
+  # V2.4 — XAU M15/M30 exploration strategies
+
+  xau_liquidity_sweep_reversal:
+    class: "XAULiquiditySweepReversal"
+    symbol: "XAUUSD"
+    timeframe: "M15"
+    risk_per_trade_pct: 0.25
+    atr_period: 14
+    atr_min_filter: 5
+    range_lookback: 20
+    sl_atr_buffer: 0.5
+    tp_mode: "range_mid"
+    tp_r_multiple: 1.5
+    max_spread: 60
+    max_trades_per_day: 2
+    no_new_trade_after: "18:00"
+    sessions:
+      - ["08:00", "11:30"]
+      - ["14:30", "18:00"]
+
+  xau_m30_htf_trend_pullback:
+    class: "XAUm30HTFTrendPullback"
+    symbol: "XAUUSD"
+    timeframe: "M30"
+    risk_per_trade_pct: 0.25
+    ema_fast: 20
+    ema_mid: 50
+    ema_slow: 200
+    atr_period: 14
+    atr_min_filter: 5
+    sl_atr_multiplier: 1.5
+    tp_r_multiple: 1.5
+    swing_lookback: 5
+    max_spread: 60
+    max_trades_per_day: 2
+    no_new_trade_after: "18:00"
+    sessions:
+      - ["08:00", "11:30"]
+      - ["14:30", "18:00"]
+
+  xau_volatility_compression_retest:
+    class: "XAUVolatilityCompressionRetest"
+    symbol: "XAUUSD"
+    timeframe: "M15"
+    risk_per_trade_pct: 0.25
+    atr_period: 14
+    atr_ma_period: 50
+    compression_bars: 8
+    compression_threshold: 0.75
+    sl_atr_buffer: 0.25
+    tp_r_multiple: 1.5
+    max_spread: 60
+    max_trades_per_day: 2
+    no_new_trade_after: "18:00"
+    sessions:
+      - ["08:00", "11:30"]
+      - ["14:30", "18:00"]
+
+  xau_m30_session_momentum_continuation:
+    class: "XAUm30SessionMomentumContinuation"
+    symbol: "XAUUSD"
+    timeframe: "M30"
+    risk_per_trade_pct: 0.25
+    ema_period: 50
+    atr_period: 14
+    atr_min_filter: 5
+    sl_atr_multiplier: 1.5
+    tp_r_multiple: 1.5
+    swing_lookback: 3
+    max_spread: 60
+    max_trades_per_day: 2
+    no_new_trade_after: "18:00"
+    sessions:
+      - ["08:00", "11:30"]
+      - ["14:30", "18:00"]

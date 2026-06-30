@@ -46,4 +46,24 @@ DEFAULT_GRID = {
     },
     "eur_london_breakout": {"tp_r": [1.2, 1.8, 2.2], "min_atr": [0.0003, 0.0005, 0.0007]},
     "eur_london_mean_reversion": {"tp_r_multiple": [0.75, 1.0, 1.25], "atr_min_filter": [0.0002, 0.0003, 0.0005]},
+    "xau_liquidity_sweep_reversal": {
+        "range_lookback": [10, 20, 30],
+        "tp_r_multiple": [1.0, 1.5, 2.0],
+        "sl_atr_buffer": [0.25, 0.5],
+    },
+    "xau_m30_htf_trend_pullback": {
+        "tp_r_multiple": [1.0, 1.5, 2.0],
+        "sl_atr_multiplier": [1.2, 1.5],
+        "ema_fast": [20, 50],
+    },
+    "xau_volatility_compression_retest": {
+        "compression_bars": [6, 8, 12],
+        "tp_r_multiple": [1.0, 1.5, 2.0],
+        "compression_threshold": [0.65, 0.75, 0.85],
+    },
+    "xau_m30_session_momentum_continuation": {
+        "tp_r_multiple": [1.0, 1.5, 2.0],
+        "sl_atr_multiplier": [1.2, 1.5],
+        "ema_period": [20, 50],
+    },
 }
