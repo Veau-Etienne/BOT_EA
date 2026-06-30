@@ -82,20 +82,22 @@
 - Pytest installé et tests anti-lookahead OK.
 - MT5/Wine localisé.
 - EA vérificateur copié dans `MQL5/Experts`.
-- Compilation automatique non validée car aucun `.ex5` n'a été généré.
-- CSV MT5 absent, parité bloquée avec verdict `PARITY_BLOCKED_MT5_CSV_MISSING`.
+- Compilation automatique OK via le Wine embarqué dans l'app MetaTrader 5.
+- Strategy Tester MT5 exécuté sur `US100.cash` H1, sans trading réel.
+- CSV MT5 généré dans le dossier agent Strategy Tester.
+- Parité Python/MT5 exécutée : `PARITY_FAIL`, 311 signaux Python contre 367 signaux MT5, 57 extras MT5, 1 manquant MT5, 0 mismatch direction.
 
 ## En Cours
 
-### V2.1 - Génération Manuelle CSV MT5
+### V2.2 - Correction Parité Python/MT5
 
-- Compiler manuellement `US100_H1_TrendPullback_ExcludeMonday_Verifier.mq5` dans MetaEditor.
-- Ouvrir `US100.cash` en H1 dans MT5.
-- Attacher l'EA avec `EnableTrading=false`.
-- Générer `MQL5/Files/us100_h1_mt5_signals.csv`.
+- Inspecter les 57 signaux supplémentaires MT5 et le signal Python manquant.
+- Comparer les données source MT5 Strategy Tester avec `data/resampled/US100_H1.csv`.
+- Vérifier timestamp de bougie, warmup EMA/ATR, spread bid/ask, arrondi broker et calcul SL/TP.
+- Corriger l'implémentation la plus fautive sans optimiser la stratégie.
 - Relancer `scripts/run_mt5_parity_check.py`.
 - Si `PARITY_OK` : prochaine étape = forward test observation only, sans trading live.
-- Si `PARITY_WARNING` ou `PARITY_FAIL` : prochaine étape = corriger timezone/EMA/ATR/timestamp/SLTP, sans optimiser la stratégie.
+- Si `PARITY_WARNING` ou `PARITY_FAIL` : candidat reste À RETRAVAILLER.
 
 ## Prochaines Étapes
 

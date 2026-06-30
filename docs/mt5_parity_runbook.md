@@ -68,6 +68,12 @@ Le script copie l'EA vers `MQL5/Experts`. Si `metaeditor64.exe` et Wine sont dis
 
 Le CSV doit apparaître dans `MQL5/Files/us100_h1_mt5_signals.csv`.
 
+Quand l'EA est lancé via Strategy Tester, le CSV peut apparaître dans un dossier agent :
+
+`Tester/Agent-127.0.0.1-3000/MQL5/Files/us100_h1_mt5_signals.csv`
+
+`scripts/run_mt5_parity_check.py` cherche automatiquement dans les deux emplacements.
+
 ## Exporter Les Signaux Python
 
 ```bash
@@ -103,3 +109,13 @@ Commande directe si le CSV MT5 est connu :
 - `PARITY_WARNING` : écarts limités, inspection nécessaire avant toute suite.
 - `PARITY_FAIL` : parité échouée, corriger timezone, EMA, ATR, timestamp, spread ou SL/TP.
 - `PARITY_BLOCKED_MT5_CSV_MISSING` : le CSV MT5 n'existe pas encore, générer le fichier depuis MT5.
+
+## Dernier Résultat US100 H1
+
+- Date : 2026-06-30.
+- Compilation EA : OK via le Wine embarqué dans l'app MetaTrader 5.
+- Strategy Tester : OK sur `US100.cash` H1, sans ordre réel.
+- Signaux Python : 311.
+- Signaux MT5 : 367.
+- Verdict : `PARITY_FAIL`.
+- Conclusion : ne pas promouvoir le candidat ; corriger d'abord la divergence de données ou de logique Python/MT5.

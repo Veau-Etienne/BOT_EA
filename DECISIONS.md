@@ -83,7 +83,7 @@ Toutes les décisions ci-dessous suivent les métriques, pas l'intuition. Une st
 
 ## V2.1 — Run MT5 parity workflow for US100_H1 candidate
 
-- Date : 2026-06-29.
+- Date : 2026-06-30.
 - Branche : `research/v2.1-run-mt5-parity`.
 - Candidat : `US100_H1 / nas_trend_pullback_exclude_monday`.
 - Pytest : installé dans `.venv`, requirements figé avec `pip freeze`.
@@ -95,12 +95,15 @@ Toutes les décisions ci-dessous suivent les métriques, pas l'intuition. Une st
 - MQL5/Experts : `/Users/etienneveau/Library/Application Support/net.metaquotes.wine.metatrader5/drive_c/Program Files/MetaTrader 5/MQL5/Experts`.
 - MQL5/Files : `/Users/etienneveau/Library/Application Support/net.metaquotes.wine.metatrader5/drive_c/Program Files/MetaTrader 5/MQL5/Files`.
 - EA verifier : copié vers `MQL5/Experts/US100_H1_TrendPullback_ExcludeMonday_Verifier.mq5`.
-- Compilation automatique : KO/non fiable ; MetaEditor via Wine retourne 0 mais le `.ex5` attendu n'est pas créé.
+- Compilation automatique : OK via le Wine embarqué dans l'app MetaTrader 5 ; `.ex5` créé, aucune action AutoTrading.
 - Export signaux Python : OK, 311 signaux exportés vers `data/reports/US100_H1_nas_trend_pullback_exclude_monday_signals.csv`.
-- CSV MT5 : absent, `MQL5/Files/us100_h1_mt5_signals.csv` non trouvé.
-- Comparaison parité : non lancée faute de CSV MT5 ; rapport bloqué écrit avec `PARITY_BLOCKED_MT5_CSV_MISSING`.
-- Verdict : `PARITY_BLOCKED_MT5_CSV_MISSING`.
-- Prochaine action : compiler manuellement dans MetaEditor, attacher l'EA sur `US100.cash` H1 avec `EnableTrading=false`, générer `us100_h1_mt5_signals.csv`, puis relancer `scripts/run_mt5_parity_check.py`.
+- Strategy Tester MT5 : exécuté sur `US100.cash` H1, 2023-02-27 -> 2026-02-25, sans ordre réel ; AutoTrading non touché.
+- CSV MT5 : OK, 367 signaux générés dans `Tester/Agent-127.0.0.1-3000/MQL5/Files/us100_h1_mt5_signals.csv`.
+- Comparaison parité : rapport écrit dans `data/reports/US100_H1_signal_parity_report.md`.
+- Résultat parité : `PARITY_FAIL`, 310 timestamps communs, 1 signal Python absent côté MT5, 57 signaux supplémentaires côté MT5, 0 mismatch direction.
+- Écarts prix : entry moyen 21.93 points, entry max 675.00 points ; TP moyen 27.44 points, TP max 1675.00 points.
+- Verdict : `PARITY_FAIL`, candidat toujours À RETRAVAILLER.
+- Prochaine action : corriger la divergence Python/MT5 avant toute nouvelle validation ; priorités d'analyse : source de données broker vs CSV Python, timestamp de bougie, warmup EMA/ATR, prix bid/ask/spread, calcul SL/TP et règles d'entrée multiples par session.
 
 ## Décision Courante
 

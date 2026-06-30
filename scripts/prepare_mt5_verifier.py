@@ -32,11 +32,9 @@ def parse_args() -> argparse.Namespace:
 
 
 def _wine_binary() -> str | None:
-    for candidate in ["wine64", "wine"]:
-        found = shutil.which(candidate)
-        if found:
-            return found
     mac_candidates = [
+        Path("/Applications/MetaTrader 5.app/Contents/SharedSupport/wine/bin/wine64"),
+        Path("/Applications/MetaTrader 5.app/Contents/SharedSupport/wine/bin/wine"),
         Path("/Applications/Wine Stable.app/Contents/Resources/wine/bin/wine64"),
         Path("/Applications/Wine Stable.app/Contents/Resources/wine/bin/wine"),
         Path("/Applications/Wine Devel.app/Contents/Resources/wine/bin/wine64"),
@@ -45,7 +43,32 @@ def _wine_binary() -> str | None:
     for path in mac_candidates:
         if path.exists():
             return str(path)
+    for candidate in ["wine64", "wine"]:
+        found = shutil.which(candidate)
+        if found:
+            return found
     return None
+
+
+def _read_log_text(log_path: Path) -> str:
+    if not log_path.exists():
+        return ""
+    for encoding in ["utf-16", "utf-8", "latin-1"]:
+        try:
+            return log_path.read_text(encoding=encoding, errors="replace")
+        except UnicodeError:
+            continue
+    return ""
+
+
+def _windows_mt5_path(path: Path) -> str | None:
+    parts = path.parts
+    try:
+        mql5_index = parts.index("MQL5")
+    except ValueError:
+        return None
+    relative = "\\".join(parts[mql5_index:])
+    return f"C:\\MT5\\{relative}"
 
 
 def _try_compile(metaeditor: Path, ea_dest: Path) -> tuple[str, str]:
@@ -53,24 +76,28 @@ def _try_compile(metaeditor: Path, ea_dest: Path) -> tuple[str, str]:
     if not wine:
         return "AUTO_COMPILE_NOT_AVAILABLE", "Wine executable not found in PATH or common macOS Wine app paths."
 
-    log_path = ea_dest.with_suffix(".compile.log")
+    log_path = ea_dest.parent.parent / "Files" / f"compile_{ea_dest.stem}.log"
     ex5_path = ea_dest.with_suffix(".ex5")
     winepath = shutil.which("winepath")
-    compile_target = str(ea_dest)
-    compile_log = str(log_path)
-    if winepath:
+    compile_target = _windows_mt5_path(ea_dest) or str(ea_dest)
+    compile_log = _windows_mt5_path(log_path) or str(log_path)
+    if "\\" not in compile_target and winepath:
         try:
             compile_target = subprocess.check_output([winepath, "-w", str(ea_dest)], text=True, timeout=10).strip()
             compile_log = subprocess.check_output([winepath, "-w", str(log_path)], text=True, timeout=10).strip()
         except Exception:
             compile_target = str(ea_dest)
             compile_log = str(log_path)
+    log_path.parent.mkdir(parents=True, exist_ok=True)
     command = [wine, str(metaeditor), f"/compile:{compile_target}", f"/log:{compile_log}"]
     try:
         completed = subprocess.run(command, check=False, capture_output=True, text=True, timeout=60)
     except Exception as exc:  # noqa: BLE001
         return "AUTO_COMPILE_KO", f"Compilation command failed to run: {exc}"
 
+    log_text = _read_log_text(log_path)
+    log_has_no_errors = "0 errors" in log_text.lower()
+    log_tail = "\n".join(log_text.splitlines()[-8:])
     detail = "\n".join(
         item
         for item in [
@@ -80,10 +107,11 @@ def _try_compile(metaeditor: Path, ea_dest: Path) -> tuple[str, str]:
             completed.stderr.strip(),
             f"log: {log_path}",
             f"ex5: {ex5_path}",
+            f"log_tail:\n{log_tail}" if log_tail else "",
         ]
         if item
     )
-    if completed.returncode == 0 and ex5_path.exists():
+    if ex5_path.exists() and (completed.returncode == 0 or log_has_no_errors):
         return "AUTO_COMPILE_OK", detail
     if completed.returncode == 0 and not ex5_path.exists():
         return "AUTO_COMPILE_KO", detail + "\nMetaEditor returned 0 but the expected .ex5 file was not created."
