@@ -71,21 +71,26 @@ def create_position(
     asset: AssetSpec,
     spread_points: float,
     slippage_points: float,
+    entry_time: pd.Timestamp | None = None,
+    entry_mode: str = "bar_close",
 ) -> Position | None:
     price = entry_price(mid_price, signal.direction, spread_points, slippage_points, asset.point)
     lots, risk_amount = position_size_lots(equity, risk_per_trade_pct, price, signal.stop_loss, asset)
     if lots <= 0 or signal.stop_loss == price:
         return None
+    metadata = dict(signal.metadata)
+    metadata["signal_timestamp"] = signal.timestamp
+    metadata["entry_mode"] = entry_mode
     return Position(
         side=signal.direction,
-        entry_time=signal.timestamp,
+        entry_time=entry_time if entry_time is not None else signal.timestamp,
         entry_price=price,
         stop_loss=float(signal.stop_loss),
         take_profit=float(signal.take_profit),
         lots=lots,
         risk_amount=risk_amount,
         initial_r=abs(price - float(signal.stop_loss)),
-        metadata=signal.metadata,
+        metadata=metadata,
     )
 
 
@@ -105,6 +110,8 @@ def close_position(
     net_pnl = gross_pnl - commission
     return {
         "strategy": position.metadata.get("strategy"),
+        "signal_timestamp": position.metadata.get("signal_timestamp"),
+        "entry_mode": position.metadata.get("entry_mode"),
         "entry_time": position.entry_time,
         "exit_time": exit_time,
         "side": position.side,

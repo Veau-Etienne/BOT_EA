@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 import pandas as pd
 
@@ -9,6 +9,9 @@ from src.backtest.execution import AssetSpec, Position, close_position, create_p
 from src.backtest.portfolio import Portfolio
 from src.strategies.base import BaseStrategy
 from src.utils.time import parse_hhmm
+
+
+EntryMode = Literal["bar_close", "next_bar_open"]
 
 
 @dataclass(frozen=True)
@@ -25,6 +28,7 @@ class BacktestConfig:
     slippage_points: float = 5.0
     commission_per_lot_round_turn: float = 7.0
     diagnostic_full_sample: bool = False
+    entry_mode: EntryMode = "bar_close"
 
 
 @dataclass(frozen=True)
@@ -40,6 +44,8 @@ class BacktestEngine:
         self.asset = asset
 
     def run(self, data: pd.DataFrame, strategy: BaseStrategy) -> BacktestResult:
+        if self.config.entry_mode not in {"bar_close", "next_bar_open"}:
+            raise ValueError(f"Unsupported entry_mode: {self.config.entry_mode}")
         prepared = strategy.prepare(data)
         portfolio = Portfolio.create(self.config.initial_capital)
         open_position: Position | None = None
@@ -128,15 +134,33 @@ class BacktestEngine:
             signal = strategy.generate_signal(i, prepared)
             if signal is None:
                 continue
+            entry_index = i
+            entry_mid = float(row["close"])
+            entry_time = signal.timestamp
+            entry_spread_points = spread_points
+            if self.config.entry_mode == "next_bar_open":
+                if i + 1 >= len(prepared):
+                    continue
+                entry_index = i + 1
+                entry_row = prepared.iloc[entry_index]
+                entry_time = prepared.index[entry_index]
+                entry_mid = float(entry_row["open"])
+                entry_spread_points = (
+                    float(entry_row["spread"])
+                    if "spread" in prepared.columns and pd.notna(entry_row.get("spread"))
+                    else self.config.spread_points
+                )
             risk_pct = min(strategy.risk_per_trade_pct, self.config.risk_per_trade_pct)
             position = create_position(
                 signal,
-                float(row["close"]),
+                entry_mid,
                 portfolio.equity,
                 risk_pct,
                 self.asset,
-                spread_points,
+                entry_spread_points,
                 self.config.slippage_points,
+                entry_time=entry_time,
+                entry_mode=self.config.entry_mode,
             )
             if position is not None:
                 open_position = position

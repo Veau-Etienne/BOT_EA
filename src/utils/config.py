@@ -52,4 +52,5 @@ def build_backtest_config(risk_config: dict[str, Any], strategy_cfg: dict[str, A
         spread_points=float(costs.get("spread_points", 20)),
         slippage_points=float(costs.get("slippage_points", 5)),
         commission_per_lot_round_turn=float(costs.get("commission_per_lot_round_turn", 7.0)),
+        entry_mode=str(strategy_cfg.get("entry_mode", "bar_close")),  # type: ignore[arg-type]
     )

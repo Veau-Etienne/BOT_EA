@@ -9,6 +9,24 @@
 - Verdict courant : À RETRAVAILLER.
 - Trading live : interdit.
 
+## Source De Données Officielle
+
+- Source officielle V2.3 : export H1 MT5 Strategy Tester.
+- Fichier local de travail : `data/resampled/US100_H1_FROM_MT5.csv`.
+- Source rejetée pour la validation de ce candidat : `data/resampled/US100_H1.csv`.
+
+Le H1 resamplé depuis M15 est rejeté pour la validation stricte de ce candidat parce que la V2.2 a confirmé `BAR_PARITY_FAIL` entre ce fichier et les bougies H1 réellement utilisées par MT5 Strategy Tester. Les signaux Python/MT5 passent en `PARITY_OK` uniquement quand Python utilise les bougies H1 exportées depuis MT5.
+
+Cette décision ne valide pas la stratégie. Elle fixe seulement la source de vérité pour les tests US100 H1 suivants. Le candidat reste recherche uniquement, non tradable, sans live.
+
+## Convention D'Entrée V2.3
+
+- Signal : calculé sur une bougie H1 clôturée.
+- Timestamp signal : timestamp de la bougie de signal.
+- Mode historique : `bar_close`, entrée théorique au close de la bougie signal.
+- Mode réaliste de validation : `next_bar_open`, entrée à l'open de la bougie suivante avec spread/slippage.
+- Le trade doit conserver séparément `signal_timestamp` et `entry_time`.
+
 ## Métriques V1.9
 
 | Mesure | Valeur |
@@ -51,6 +69,20 @@ Le candidat ne passe pas le walk-forward majoritairement OK. Les folds 2 et 3 mo
 | Slippage x2 | PF 1.338, OK |
 | Risque 0.5% | PF 1.339, DD 1.78%, OK |
 
+## Résultats V2.3
+
+| Test | Trades | Net | PF | Expectancy | DD max | Verdict |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| MT5 H1 `bar_close` | 200 | 3 382.77 | 1.350 | 16.91 | 0.89% | VALIDABLE moteur |
+| MT5 H1 `next_bar_open` | 200 | 3 236.37 | 1.335 | 16.18 | 0.90% | VALIDABLE moteur |
+| MT5 H1 `next_bar_open` coûts x1.5 | 200 | 1 673.94 | 1.163 | 8.37 | 0.99% | À RETRAVAILLER |
+
+Monte Carlo coûts x1.5 : DD médian 1.61%, DD 95% 2.51%, pire DD 3.53%, ruine 5/8/10/15% à 0%.
+
+Trade parity coûts x1.5 : 200 trades Python, 200 trades MT5 replay, 200 communs, 0 mismatch direction/entrée/sortie/raison avec tolérance d'exécution 35 points et 2 USD PnL.
+
+Verdict V2.3 : CANDIDAT FRAGILE. Le signal survit au mode `next_bar_open`, mais le stress coûts x1.5 ramène le PF sous 1.20 et concentre trop le profit sur un seul mois.
+
 ## Forces
 
 - Profit factor strict supérieur à 1.20.
@@ -70,8 +102,8 @@ Le candidat ne passe pas le walk-forward majoritairement OK. Les folds 2 et 3 mo
 
 ## Raisons De Non-Live
 
-- La parité Python/MT5 n'est pas encore prouvée.
-- La résistance aux coûts réels broker doit être vérifiée.
+- La parité signaux/trades Python/MT5 est exploitable uniquement avec la source H1 MT5 officielle.
+- La résistance aux coûts réels broker reste insuffisante : coûts x1.5 donnent PF 1.163.
 - Les règles de validation avancée ne sont pas toutes passées.
 - Le candidat reste un objet de recherche, pas une stratégie validée.
 

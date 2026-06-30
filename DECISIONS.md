@@ -123,6 +123,23 @@ Toutes les décisions ci-dessous suivent les métriques, pas l'intuition. Une st
 - Verdict : `PARITY_FIXED` pour l'implémentation MT5/Python quand la même source H1 MT5 est utilisée ; `DATA_MISMATCH_CONFIRMED` pour `data/resampled/US100_H1.csv` vs bougies H1 MT5.
 - Prochaine action : pour toute validation MT5 stricte, exporter/importer les bougies H1 du Strategy Tester ou aligner officiellement la source H1 avant backtest ; ne pas promouvoir le candidat tant que la décision data source n'est pas figée.
 
+## V2.3 — Realistic execution and trade parity for US100_H1 candidate
+
+- Date : 2026-06-30.
+- Branche : `research/v2.3-realistic-execution-us100-h1`.
+- Source officielle figée : `MT5 Strategy Tester H1 export`, fichier local `data/resampled/US100_H1_FROM_MT5.csv`.
+- Source rejetée pour ce candidat : `data/resampled/US100_H1.csv`, car `BAR_PARITY_FAIL` vs bougies H1 MT5.
+- Convention réaliste : `next_bar_open`, signal sur bougie clôturée, entrée à l'open de la bougie suivante, `signal_timestamp` conservé séparément de `entry_time`.
+- Backtest `bar_close` sur MT5 H1 : 200 trades, net 3 382.77, PF 1.350, expectancy 16.91, DD 0.89%, winrate 52.00%, concentration meilleur mois 35.57%, verdict moteur `VALIDABLE`.
+- Backtest `next_bar_open` sur MT5 H1 : 200 trades, net 3 236.37, PF 1.335, expectancy 16.18, DD 0.90%, winrate 52.50%, concentration meilleur mois 36.87%, verdict moteur `VALIDABLE`.
+- Backtest `next_bar_open` coûts x1.5 : 200 trades, net 1 673.94, PF 1.163, expectancy 8.37, DD 0.99%, winrate 50.50%, concentration meilleur mois 65.22%, verdict `À RETRAVAILLER`.
+- Monte Carlo coûts x1.5 : DD médian 1.61%, DD 95% 2.51%, pire DD 3.53%, ruine 5/8/10/15% à 0%, risque recommandé 0.50%.
+- TradeReplay EA : `US100_H1_TrendPullback_ExcludeMonday_TradeReplay_Verifier.mq5`, simulation uniquement, `EnableTrading=false`, aucun ordre réel, compilation OK.
+- Trade parity coûts x1.5 : 200 trades Python, 200 trades MT5, 200 communs, 0 manquant, 0 extra, 0 mismatch direction/exit time/exit reason, verdict `TRADE_PARITY_OK` avec tolérance d'exécution 35 points et PnL 2 USD. Le rapport strict 5 points reste trop serré pour les arrondis/spreads MT5 sous coût x1.5.
+- Verdict V2.3 : `CANDIDAT FRAGILE`.
+- Raison : le candidat survit au passage `next_bar_open` et la parité de trades est exploitable, mais le stress coûts x1.5 fait passer PF sous 1.20 et concentre 65.22% du profit sur un seul mois. Toujours non tradable.
+- Prochaine action : pas de live ; soit forward observation only sur données MT5 H1 officielles, soit reformuler le signal si la robustesse coûts doit être prioritaire.
+
 ## Décision Courante
 
 Le candidat `US100_H1 / nas_trend_pullback_exclude_monday` reste à retravailler. Aucune stratégie n'est validée.

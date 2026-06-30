@@ -4,6 +4,8 @@ Laboratoire local de trading algorithmique pour tester des hypothèses sur donn�
 
 Statut scientifique actuel : aucune stratégie n'est validée. Toutes les hypothèses M15 testées jusqu'à V1.5 sont rejetées.
 
+Statut courant V2.3 : le candidat prioritaire `US100_H1 / nas_trend_pullback_exclude_monday` reste un candidat de recherche fragile, non tradable. Sa source officielle de validation est maintenant l'export H1 MT5 Strategy Tester (`data/resampled/US100_H1_FROM_MT5.csv`), pas le H1 resamplé depuis M15. Le mode d'exécution réaliste est `next_bar_open`. Aucun live, aucune activation AutoTrading, aucune exécution réelle.
+
 Ce dépôt ne fournit aucun conseil financier. Les résultats de backtest ne doivent jamais être utilisés comme promesse de performance ou comme justification d'un risque réel.
 
 ## Installation
@@ -57,6 +59,36 @@ Diagnostic data :
 
 ```bash
 .venv/bin/python scripts/data_diagnostics.py --data data/raw/XAUUSD_M15.csv --output data/reports/XAUUSD_M15_diagnostics.md
+```
+
+Validation réaliste du candidat US100 H1 :
+
+```bash
+.venv/bin/python scripts/run_backtest.py \
+  --data data/resampled/US100_H1_FROM_MT5.csv \
+  --strategy nas_trend_pullback_exclude_monday \
+  --timeframe H1 \
+  --entry-mode next_bar_open
+
+.venv/bin/python scripts/run_backtest.py \
+  --data data/resampled/US100_H1_FROM_MT5.csv \
+  --strategy nas_trend_pullback_exclude_monday \
+  --timeframe H1 \
+  --entry-mode next_bar_open \
+  --cost-multiplier 1.5
+
+.venv/bin/python scripts/run_monte_carlo.py \
+  --trades reports/latest_trades.csv \
+  --output data/reports/US100_H1_FROM_MT5_next_open_cost15_monte_carlo.json
+```
+
+Parité trade Python/MT5, uniquement avec un EA de replay sans ordre réel :
+
+```bash
+.venv/bin/python scripts/compare_mt5_python_trades.py \
+  --python-trades reports/latest_trades.csv \
+  --mt5-trades data/reports/US100_H1_mt5_trade_replay_cost15.csv \
+  --output data/reports/US100_H1_trade_parity_cost15_report.md
 ```
 
 Backtest :

@@ -96,14 +96,24 @@
 - Signal parity après correction avec bougies MT5 importées : `PARITY_OK`, 311 signaux communs, 0 extra, 0 manquant.
 - Signal parity après correction avec bougies Python resamplées : reste `PARITY_FAIL` résiduel par source de données, 1 extra MT5 et 1 manquant MT5.
 
-## En Cours
-
 ### V2.3 - Décision Source H1 Officielle
 
-- Décider si la validation stricte US100 H1 doit utiliser les bougies H1 exportées de MT5 ou le resampling M15 interne.
-- Si MT5 devient la source de référence, regénérer le pack backtest/Monte Carlo/walk-forward sur `US100_H1_FROM_MT5.csv`.
-- Si le resampling M15 reste la source de référence, expliquer et accepter l'écart MT5 résiduel avant toute suite.
-- Ne pas optimiser la stratégie tant que cette décision data source n'est pas figée.
+- Source officielle décidée pour ce candidat : `data/resampled/US100_H1_FROM_MT5.csv`.
+- Entry mode réaliste ajouté : `next_bar_open`.
+- Backtest `bar_close` vs `next_bar_open` exécuté sur MT5 H1.
+- Stress coûts x1.5 exécuté en `next_bar_open`.
+- TradeReplay EA ajouté et compilé, simulation uniquement.
+- Trade parity coûts x1.5 : `TRADE_PARITY_OK` avec tolérance d'exécution 35 points / 2 USD PnL.
+- Statut : candidat fragile, non validé, non tradable.
+
+## En Cours
+
+### V2.4 - Forward Observation / Reformulation
+
+- Si le candidat reste prioritaire : lancer uniquement une observation forward/demo sans ordre réel, avec source MT5 H1 officielle.
+- Si la robustesse coûts prime : reformuler l'hypothèse, car coûts x1.5 ramènent PF sous 1.20.
+- Si une parité trade stricte à 5 points est exigée : exporter plus de précision ou harmoniser les arrondis d'entrée MT5/Python avant toute suite.
+- Aucun live tant qu'aucune stratégie n'est validée.
 
 ## Prochaines Étapes
 

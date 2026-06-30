@@ -15,9 +15,14 @@ candidate:
   status: "research_candidate"
   verdict: "à retravailler"
   live_trading_forbidden: true
+  official_data_source: "MT5 Strategy Tester H1 export"
+  official_data_file_local: "data/resampled/US100_H1_FROM_MT5.csv"
+  rejected_for_candidate_validation: "data/resampled/US100_H1.csv"
+  data_source_reason: "BAR_PARITY_FAIL between resampled M15 H1 and MT5 Strategy Tester H1"
+  signal_parity_status: "PARITY_OK when using MT5 H1 bars"
 
 strategy_rules:
-  entry_convention: "bar_close"
+  entry_convention: "next_bar_open"
   monday_filter: true
   sessions:
     - ["15:45", "18:00"]

@@ -40,6 +40,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--reports-dir", default=str(ROOT / "data/reports"))
     parser.add_argument("--diagnostic-full-sample", action="store_true", help="Ignore drawdown limits for analysis only.")
     parser.add_argument("--cost-multiplier", type=float, default=1.0, help="Multiply spread, slippage and commission for execution stress tests.")
+    parser.add_argument("--entry-mode", choices=["bar_close", "next_bar_open"], default=None, help="Entry convention for generated signals.")
     return parser.parse_args()
 
 
@@ -51,6 +52,8 @@ def main() -> None:
     strat_cfg = strategy_config(strategies_cfg, args.strategy)
     asset = resolve_asset_spec(assets_cfg, strat_cfg["symbol"])
     backtest_cfg = build_backtest_config(risk_cfg, strat_cfg)
+    if args.entry_mode is not None:
+        backtest_cfg = replace(backtest_cfg, entry_mode=args.entry_mode)
     if args.cost_multiplier <= 0:
         raise ValueError("--cost-multiplier must be positive")
     if args.cost_multiplier != 1.0:
@@ -75,7 +78,8 @@ def main() -> None:
 
     reports_dir = Path(args.reports_dir)
     reports_dir.mkdir(parents=True, exist_ok=True)
-    prefix = reports_dir / f"{args.strategy}_{Path(args.data).stem}"
+    cost_suffix = f"_costx{str(args.cost_multiplier).replace('.', '_')}" if args.cost_multiplier != 1.0 else ""
+    prefix = reports_dir / f"{args.strategy}_{Path(args.data).stem}_{backtest_cfg.entry_mode}{cost_suffix}"
     trades_path = prefix.with_suffix(".trades.csv")
     equity_path = prefix.with_suffix(".equity.csv")
     metrics_path = prefix.with_suffix(".metrics.csv")
@@ -89,6 +93,8 @@ def main() -> None:
         validation,
         asdict(monte_carlo),
         title=f"{args.strategy} Backtest",
+        entry_mode=backtest_cfg.entry_mode,
+        cost_multiplier=args.cost_multiplier,
         diagnostic_full_sample=args.diagnostic_full_sample,
     )
     write_backtest_report(report_path, report)
@@ -109,6 +115,7 @@ def main() -> None:
                 "stopped_reason": result.stopped_reason,
                 "diagnostic_full_sample": args.diagnostic_full_sample,
                 "cost_multiplier": args.cost_multiplier,
+                "entry_mode": backtest_cfg.entry_mode,
             },
             handle,
             indent=2,
@@ -126,6 +133,7 @@ def main() -> None:
         print("MODE DIAGNOSTIC — non tradable, drawdown limits ignored for analysis.")
     if args.cost_multiplier != 1.0:
         print(f"Cost multiplier: x{args.cost_multiplier:.2f}")
+    print(f"Entry mode: {backtest_cfg.entry_mode}")
     print(f"Trades: {metrics['trade_count']}")
     print(f"Final capital: {metrics['final_capital']:.2f}")
     print(f"Net profit: {metrics['net_profit']:.2f}")

@@ -22,6 +22,8 @@ def build_backtest_report(
     validation: ValidationResult,
     monte_carlo: dict[str, Any] | None = None,
     title: str = "Backtest Report",
+    entry_mode: str | None = None,
+    cost_multiplier: float = 1.0,
     diagnostic_full_sample: bool = False,
 ) -> str:
     monte_carlo = monte_carlo or {}
@@ -31,6 +33,16 @@ def build_backtest_report(
     ]
     if diagnostic_full_sample:
         lines.extend(["> MODE DIAGNOSTIC — non tradable, drawdown limits ignored for analysis.", ""])
+    if entry_mode or cost_multiplier != 1.0:
+        lines.extend(
+            [
+                "## Execution",
+                "",
+                f"- Entry mode: `{entry_mode or 'bar_close'}`",
+                f"- Cost multiplier: `x{cost_multiplier:.2f}`",
+                "",
+            ]
+        )
     lines.extend(
         [
             "## Verdict",
